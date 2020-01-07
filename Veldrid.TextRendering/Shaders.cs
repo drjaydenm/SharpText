@@ -2,17 +2,24 @@
 {
     public static class Shaders
     {
-        private static string SharedBufferDeclaration = @"
-layout(set = 0, binding = 0) uniform sampler2D textureSampler;
-layout(set = 1, binding = 0) uniform TextPropertiesBuffer
+        private static string SharedVertexBufferDeclaration = @"
+layout(set = 0, binding = 2) uniform TextVertexPropertiesBuffer
+{
+    mat4 matrix3;
+    vec4 rect;
+};
+";
+        
+        private static string SharedFragmentBufferDeclaration = @"
+layout(set = 0, binding = 0) uniform texture2D textureView;
+layout(set = 0, binding = 1) uniform sampler textureSampler;
+layout(set = 0, binding = 3) uniform TextFragmentPropertiesBuffer
 {
     float thicknessAndMode;
     float _padding1;
     float _padding2;
     float _padding3;
-    mat4 matrix3;
     vec4 glyphColor;
-    vec4 rect;
 };
 ";
 
@@ -21,7 +28,7 @@ layout(set = 1, binding = 0) uniform TextPropertiesBuffer
 
 precision highp float;
 
-" + SharedBufferDeclaration + @"
+" + SharedVertexBufferDeclaration + @"
 
 layout(location = 0) in vec4 position4;
 layout(location = 1) in vec4 coord4;
@@ -41,7 +48,7 @@ void main() {
 
 precision highp float;
 
-" + SharedBufferDeclaration + @"
+" + SharedFragmentBufferDeclaration + @"
 
 layout(location = 0) in vec2 _coord2;
 layout(location = 1) in vec4 _coord4;
@@ -58,7 +65,7 @@ void main() {
 
 precision highp float;
 
-" + SharedBufferDeclaration + @"
+" + SharedVertexBufferDeclaration + @"
 
 layout(location = 0) in vec4 position4;
 layout(location = 1) in vec4 coord4;
@@ -67,7 +74,7 @@ layout(location = 0) out vec2 _coord2;
 
 void main() {
     _coord2 = position4.zw;
-    gl_Position = vec4(matrix3 * vec4(position4.xy, 1.0, 1.0)).xywz;
+    gl_Position = vec4(matrix3 * vec4(position4.xy, 0.0, 1.0));
 }
 ";
 
@@ -76,7 +83,7 @@ void main() {
 
 precision highp float;
 
-" + SharedBufferDeclaration + @"
+" + SharedFragmentBufferDeclaration + @"
 
 layout(location = 0) in vec2 _coord2;
 
@@ -98,7 +105,7 @@ void main() {
 
 precision highp float;
 
-" + SharedBufferDeclaration + @"
+" + SharedVertexBufferDeclaration + @"
 
 layout(location = 0) in vec2 position2;
 
@@ -115,7 +122,7 @@ void main() {
 
 precision highp float;
 
-" + SharedBufferDeclaration + @"
+" + SharedFragmentBufferDeclaration + @"
 
 layout(location = 0) in vec2 _coord2;
 
@@ -123,13 +130,13 @@ layout(location = 0) out vec4 outputColor;
 
 void main() {
     // Get samples for -2/3 and -1/3
-    vec2 valueL = texture(textureSampler, vec2(_coord2.x + dFdx(_coord2.x), _coord2.y)).yz * 255.0;
+    vec2 valueL = texture(sampler2D(textureView, textureSampler), vec2(_coord2.x + dFdx(_coord2.x), _coord2.y)).yz * 255.0;
     vec2 lowerL = mod(valueL, 16.0);
     vec2 upperL = (valueL - lowerL) / 16.0;
     vec2 alphaL = min(abs(upperL - lowerL), 2.0);
 
     // Get samples for 0, +1/3, and +2/3
-    vec3 valueR = texture(textureSampler, _coord2).xyz * 255.0;
+    vec3 valueR = texture(sampler2D(textureView, textureSampler), _coord2).xyz * 255.0;
     vec3 lowerR = mod(valueR, 16.0);
     vec3 upperR = (valueR - lowerR) / 16.0;
     vec3 alphaR = min(abs(upperR - lowerR), 2.0);
@@ -151,14 +158,14 @@ void main() {
 
 precision highp float;
 
-" + SharedBufferDeclaration + @"
+" + SharedVertexBufferDeclaration + @"
 
 layout(location = 0) in vec2 position2;
 
 layout(location = 0) out vec2 _coord2;
 
 void main() {
-    _coord2 = (matrix3 * vec3(position2, 1.0)).xy;
+    _coord2 = (matrix3 * vec4(position2, 0.0, 1.0)).xy;
     gl_Position = vec4(position2, 0.0, 1.0);
 }
 ";
@@ -168,7 +175,7 @@ void main() {
 
 precision highp float;
 
-" + SharedBufferDeclaration + @"
+" + SharedFragmentBufferDeclaration + @"
 
 layout(location = 0) in vec2 _coord2;
 

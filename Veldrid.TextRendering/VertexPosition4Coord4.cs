@@ -16,7 +16,7 @@ namespace Veldrid.TextRendering
         public const uint SizeInBytes = 32;
 
         public static VertexLayoutDescription LayoutDescription = new VertexLayoutDescription(
-            new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float4),
+            new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float4),
             new VertexElementDescription("Coord", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float4)
         );
     }

@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -7,15 +7,20 @@ using Veldrid.SPIRV;
 namespace Veldrid.TextRendering
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct TextProperties
+    public struct TextVertexProperties
+    {
+        public Matrix4x4 Transform;
+        public Vector4 Rectangle;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TextFragmentProperties
     {
         public float ThicknessAndMode;
         private float _padding1;
         private float _padding2;
         private float _padding3;
-        public Matrix4x4 Transform;
         public Vector4 GlyphColor;
-        public Vector4 Rectangle;
     }
 
     public class TextRenderer
@@ -23,12 +28,22 @@ namespace Veldrid.TextRendering
         private readonly GraphicsDevice graphicsDevice;
         private readonly Font font;
 
-        private DeviceBuffer vertexBuffer;
-        private DeviceBuffer textPropertiesBuffer;
-        private Pipeline pipeline;
+        private DeviceBuffer glyphVertexBuffer;
+        private DeviceBuffer quadVertexBuffer;
+        private DeviceBuffer textVertexPropertiesBuffer;
+        private DeviceBuffer textFragmentPropertiesBuffer;
+        private Pipeline outputPipeline;
+        private Pipeline glyphPipeline;
         private VertexPosition4Coord4[] glyphVertices;
-        private TextProperties textProperties;
+        private VertexPosition2[] quadVertices;
+        private TextVertexProperties textVertexProperties;
+        private TextFragmentProperties textFragmentProperties;
         private ResourceSet textPropertiesSet;
+        private Texture glyphTexture;
+        private TextureView glyphTextureView;
+        private Framebuffer glyphTextureFramebuffer;
+        private Shader[] glyphShaders;
+        private Shader[] textShaders;
 
         public TextRenderer(GraphicsDevice graphicsDevice, Font font)
         {
@@ -56,25 +71,32 @@ namespace Veldrid.TextRendering
         public void Draw(CommandList commandList)
         {
             var requiredBufferSize = VertexPosition4Coord4.SizeInBytes * (uint)glyphVertices.Length;
-            if (vertexBuffer.SizeInBytes < requiredBufferSize)
+            if (glyphVertexBuffer.SizeInBytes < requiredBufferSize)
             {
-                vertexBuffer.Dispose();
-                vertexBuffer = graphicsDevice.ResourceFactory.CreateBuffer(
+                glyphVertexBuffer.Dispose();
+                glyphVertexBuffer = graphicsDevice.ResourceFactory.CreateBuffer(
                     new BufferDescription(requiredBufferSize, BufferUsage.VertexBuffer));
             }
 
-            commandList.UpdateBuffer(vertexBuffer, 0, glyphVertices);
-            commandList.SetVertexBuffer(0, vertexBuffer);
+            commandList.UpdateBuffer(glyphVertexBuffer, 0, glyphVertices);
+            commandList.SetVertexBuffer(0, glyphVertexBuffer);
 
-            var matrixA = Matrix4x4.CreateScale(2f / graphicsDevice.SwapchainFramebuffer.Width, 2f / graphicsDevice.SwapchainFramebuffer.Height, 1f)
-                * Matrix4x4.CreateTranslation(-1, 1, 0);
+            var matrixA = Matrix4x4.CreateTranslation(-1, 0, 0);
             var matrixB = Matrix4x4.CreateScale(1f / font.FontSize) * matrixA;
-            textProperties.Transform = matrixB;
-            commandList.UpdateBuffer(textPropertiesBuffer, 0, textProperties);
+            textVertexProperties.Transform = matrixB;
+            commandList.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
 
-            commandList.SetPipeline(pipeline);
+            commandList.SetPipeline(glyphPipeline);
             commandList.SetGraphicsResourceSet(0, textPropertiesSet);
+            commandList.SetFramebuffer(glyphTextureFramebuffer);
 
+            commandList.ClearColorTarget(0, RgbaFloat.White);
+            commandList.Draw((uint)glyphVertices.Length);
+
+            // 2nd pass
+            commandList.SetPipeline(outputPipeline);
+            commandList.SetFramebuffer(graphicsDevice.MainSwapchain.Framebuffer);
+            commandList.SetVertexBuffer(0, quadVertexBuffer);
             commandList.Draw((uint)glyphVertices.Length);
         }
 
@@ -82,32 +104,52 @@ namespace Veldrid.TextRendering
         {
             var factory = graphicsDevice.ResourceFactory;
 
-            vertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition4Coord4.SizeInBytes, BufferUsage.VertexBuffer));
-
-            textPropertiesBuffer = factory.CreateBuffer(new BufferDescription((uint)Unsafe.SizeOf<TextProperties>(), BufferUsage.UniformBuffer));
-            textProperties = new TextProperties
+            glyphVertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition4Coord4.SizeInBytes, BufferUsage.VertexBuffer));
+            quadVertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition2.SizeInBytes * 4, BufferUsage.VertexBuffer));
+            quadVertices = new VertexPosition2[]
             {
-                ThicknessAndMode = 0, // TODO support other modes
+                new VertexPosition2(new Vector2(-1, -1)),
+                new VertexPosition2(new Vector2(1, -1)),
+                new VertexPosition2(new Vector2(-1, 1)),
+                new VertexPosition2(new Vector2(1, 1))
+            };
+            graphicsDevice.UpdateBuffer(quadVertexBuffer, 0, quadVertices);
+
+            textVertexPropertiesBuffer = factory.CreateBuffer(new BufferDescription((uint)Unsafe.SizeOf<TextVertexProperties>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+            textFragmentPropertiesBuffer = factory.CreateBuffer(new BufferDescription((uint)Unsafe.SizeOf<TextFragmentProperties>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+            textVertexProperties = new TextVertexProperties
+            {
                 Transform = new Matrix4x4(),
-                GlyphColor = new Vector4(0, 0.5f, 1, 1),
                 Rectangle = new Vector4(-1, -1, 1, 1)
             };
-            graphicsDevice.UpdateBuffer(textPropertiesBuffer, 0, textProperties);
+            textFragmentProperties = new TextFragmentProperties
+            {
+                ThicknessAndMode = 0, // TODO support other modes
+                GlyphColor = new Vector4(0, 0.5f, 1, 1)
+            };
+            graphicsDevice.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
+            graphicsDevice.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
 
-            ShaderDescription vertexShaderDesc = new ShaderDescription(
-                ShaderStages.Vertex, Encoding.UTF8.GetBytes(Shaders.GlyphTextVertex), "main");
-            ShaderDescription fragmentShaderDesc = new ShaderDescription(
-                ShaderStages.Fragment, Encoding.UTF8.GetBytes(Shaders.GlyphTextFragment), "main");
+            var colorFormat = graphicsDevice.SwapchainFramebuffer.OutputDescription.ColorAttachments[0].Format;
+            glyphTexture = factory.CreateTexture(TextureDescription.Texture2D(graphicsDevice.SwapchainFramebuffer.Width, graphicsDevice.SwapchainFramebuffer.Height, 1, 1, colorFormat, TextureUsage.RenderTarget | TextureUsage.Sampled));
+            glyphTextureView = factory.CreateTextureView(glyphTexture);
+            glyphTextureFramebuffer = factory.CreateFramebuffer(new FramebufferDescription(null, glyphTexture));
 
-            var shaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
+            CompileShaders(factory);
 
             var textPropertiesLayout = factory.CreateResourceLayout(
                 new ResourceLayoutDescription(
-                    new ResourceLayoutElementDescription("TextPropertiesBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex | ShaderStages.Fragment)));
+                    new ResourceLayoutElementDescription("GlyphTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
+                    new ResourceLayoutElementDescription("GlyphTextureSampler", ResourceKind.Sampler, ShaderStages.Fragment),
+                    new ResourceLayoutElementDescription("TextVertexPropertiesBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex),
+                    new ResourceLayoutElementDescription("TextFragmentPropertiesBuffer", ResourceKind.UniformBuffer, ShaderStages.Fragment)));
 
             textPropertiesSet = factory.CreateResourceSet(new ResourceSetDescription(
                 textPropertiesLayout,
-                textPropertiesBuffer));
+                glyphTextureView,
+                graphicsDevice.LinearSampler,
+                textVertexPropertiesBuffer,
+                textFragmentPropertiesBuffer));
 
             var pipelineDescription = new GraphicsPipelineDescription(
                 blendState: BlendStateDescription.SingleOverrideBlend,
@@ -123,12 +165,37 @@ namespace Veldrid.TextRendering
                     scissorTestEnabled: false),
                 primitiveTopology: PrimitiveTopology.TriangleStrip,
                 shaderSet: new ShaderSetDescription(
-                    vertexLayouts: new[] { VertexPosition4Coord4.LayoutDescription },
-                    shaders: shaders),
+                    vertexLayouts: new[] { VertexPosition2.LayoutDescription },
+                    shaders: textShaders),
                 resourceLayouts: new ResourceLayout[] { textPropertiesLayout },
                 outputs: graphicsDevice.SwapchainFramebuffer.OutputDescription
             );
-            pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
+            outputPipeline = factory.CreateGraphicsPipeline(pipelineDescription);
+
+            pipelineDescription.DepthStencilState = new DepthStencilStateDescription(false, false, ComparisonKind.Never);
+            pipelineDescription.Outputs = new OutputDescription(null, new OutputAttachmentDescription(colorFormat));
+            pipelineDescription.BlendState = BlendStateDescription.SingleAdditiveBlend;
+            pipelineDescription.ShaderSet = new ShaderSetDescription(
+                vertexLayouts: new[] { VertexPosition4Coord4.LayoutDescription },
+                shaders: glyphShaders);
+            glyphPipeline = factory.CreateGraphicsPipeline(pipelineDescription);
+        }
+
+        private void CompileShaders(ResourceFactory factory)
+        {
+            var glyphVertexShaderDesc = new ShaderDescription(
+                ShaderStages.Vertex, Encoding.UTF8.GetBytes(Shaders.GlyphTextVertex), "main");
+            var glyphFragmentShaderDesc = new ShaderDescription(
+                ShaderStages.Fragment, Encoding.UTF8.GetBytes(Shaders.GlyphTextFragment), "main");
+
+            glyphShaders = factory.CreateFromSpirv(glyphVertexShaderDesc, glyphFragmentShaderDesc);
+
+            var textVertexShaderDesc = new ShaderDescription(
+                ShaderStages.Vertex, Encoding.UTF8.GetBytes(Shaders.TextVertex), "main");
+            var textFragmentShaderDesc = new ShaderDescription(
+                ShaderStages.Fragment, Encoding.UTF8.GetBytes(Shaders.TextFragment), "main");
+
+            textShaders = factory.CreateFromSpirv(textVertexShaderDesc, textFragmentShaderDesc);
         }
     }
 }
