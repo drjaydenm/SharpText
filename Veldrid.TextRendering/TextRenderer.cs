@@ -82,6 +82,13 @@ namespace Veldrid.TextRendering
             ShaderDescription fragmentShaderDesc = new ShaderDescription(
                 ShaderStages.Fragment, Encoding.UTF8.GetBytes(Shaders.FragmentShader), "main");
 
+            ShaderDescription textVertexShaderDesc = new ShaderDescription(
+                ShaderStages.Vertex, Encoding.UTF8.GetBytes(Shaders.EquationTextVertex), "main");
+            ShaderDescription textFragmentShaderDesc = new ShaderDescription(
+                ShaderStages.Fragment, Encoding.UTF8.GetBytes(Shaders.EquationTextFragment), "main");
+
+            var shadersText = factory.CreateFromSpirv(textVertexShaderDesc, textFragmentShaderDesc);
+
             var shaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
 
             var pipelineDescription = new GraphicsPipelineDescription(
