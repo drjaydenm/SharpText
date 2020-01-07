@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Numerics;
 using Veldrid.Sdl2;
 using Veldrid.StartupUtilities;
 
@@ -34,11 +35,8 @@ namespace Veldrid.TextRendering
             factory = graphicsDevice.ResourceFactory;
             commandList = factory.CreateCommandList();
 
-            textRenderer = new TextRenderer();
-            textRenderer.Initialize(graphicsDevice);
-
-            var font = new Font("Fonts/OpenSans-Regular.woff");
-            var points = font.GetCharacterGlyphPoints('e');
+            var font = new Font("Fonts/OpenSans-Regular.woff", 1000);
+            textRenderer = new TextRenderer(graphicsDevice, font);
         }
 
         private static void Update()
@@ -47,6 +45,8 @@ namespace Veldrid.TextRendering
             {
                 window.Close();
             }
+
+            textRenderer.DrawText("test", Vector2.Zero);
         }
 
         private static void Draw()

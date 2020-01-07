@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using ICSharpCode.SharpZipLib.Zip.Compression;
 using Typography.OpenFont;
@@ -8,23 +9,52 @@ namespace Veldrid.TextRendering
 {
     public class Font
     {
-        private readonly Typeface typeface;
+        public ushort UnitsPerEm => typeface.UnitsPerEm;
+        public int FontSize { get; private set; }
 
-        public Font(string filePath)
+        private readonly Typeface typeface;
+        private readonly Dictionary<char, Glyph> loadedGlyphs;
+        private readonly GlyphPathBuilder pathBuilder;
+        private readonly GlyphTranslatorToVertices pathTranslator;
+
+        public Font(string filePath, int fontSize)
         {
             SetupWoffDecompressorIfRequired();
+
+            FontSize = fontSize;
+            loadedGlyphs = new Dictionary<char, Glyph>();
 
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
                 var reader = new OpenFontReader();
                 typeface = reader.Read(fs);
             }
+
+            pathBuilder = new GlyphPathBuilder(typeface);
+            pathTranslator = new GlyphTranslatorToVertices();
         }
 
-        public GlyphPointF[] GetCharacterGlyphPoints(char character)
+        public Glyph GetGlyphByCharacter(char character)
         {
-            var glyph = typeface.GetGlyphByName("e");
-            return glyph.GlyphPoints;
+            if (loadedGlyphs.ContainsKey(character))
+                return loadedGlyphs[character];
+            
+            var glyphIndex = typeface.CmapTable.LookupIndex(character);
+            var glyph = typeface.GetGlyphByIndex(glyphIndex);
+            
+            loadedGlyphs.Add(character, glyph);
+
+            return glyph;
+        }
+
+        public VertexPositionColor[] GlyphToVertices(Glyph glyph)
+        {
+            pathBuilder.BuildFromGlyph(glyph, FontSize);
+
+            pathTranslator.Reset();
+            pathBuilder.ReadShapes(pathTranslator);
+
+            return pathTranslator.ResultingVertices;
         }
 
         private static void SetupWoffDecompressorIfRequired()

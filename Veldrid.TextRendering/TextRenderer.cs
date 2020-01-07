@@ -6,11 +6,59 @@ namespace Veldrid.TextRendering
 {
     public class TextRenderer
     {
+        private readonly GraphicsDevice graphicsDevice;
+        private readonly Font font;
+
         private DeviceBuffer vertexBuffer;
         private DeviceBuffer indexBuffer;
         private Pipeline pipeline;
+        private VertexPositionColor[] glyphVertices;
 
-        public void Initialize(GraphicsDevice graphicsDevice)
+        public TextRenderer(GraphicsDevice graphicsDevice, Font font)
+        {
+            this.graphicsDevice = graphicsDevice;
+            this.font = font;
+
+            Initialize();
+        }
+
+        public void DrawText(string text, Vector2 coords)
+        {
+            foreach (var letter in text)
+            {
+                var fontUnitsPerEm = font.UnitsPerEm;
+                var glyph = font.GetGlyphByCharacter(letter);
+                var scale = 1f / font.FontSize;
+
+                glyphVertices = font.GlyphToVertices(glyph);
+                for (var i = 0; i < glyphVertices.Length; i++)
+                {
+                    glyphVertices[i].Position *= scale;
+                }
+
+                // Only the first letter for now
+                break;
+            }
+        }
+
+        public void Draw(CommandList commandList)
+        {
+            if (vertexBuffer.SizeInBytes < VertexPositionColor.SizeInBytes * glyphVertices.Length)
+            {
+                vertexBuffer.Dispose();
+                vertexBuffer = graphicsDevice.ResourceFactory.CreateBuffer(
+                    new BufferDescription((uint)glyphVertices.Length * VertexPositionColor.SizeInBytes, BufferUsage.VertexBuffer));
+            }
+
+            commandList.UpdateBuffer(vertexBuffer, 0, glyphVertices);
+
+            commandList.SetVertexBuffer(0, vertexBuffer);
+            commandList.SetIndexBuffer(indexBuffer, IndexFormat.UInt16);
+            commandList.SetPipeline(pipeline);
+            commandList.Draw((uint)glyphVertices.Length);
+        }
+
+        private void Initialize()
         {
             var factory = graphicsDevice.ResourceFactory;
 
@@ -56,19 +104,6 @@ namespace Veldrid.TextRendering
                 outputs: graphicsDevice.SwapchainFramebuffer.OutputDescription
             );
             pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
-        }
-
-        public void Draw(CommandList commandList)
-        {
-            commandList.SetVertexBuffer(0, vertexBuffer);
-            commandList.SetIndexBuffer(indexBuffer, IndexFormat.UInt16);
-            commandList.SetPipeline(pipeline);
-            commandList.DrawIndexed(
-                indexCount: 4,
-                instanceCount: 1,
-                indexStart: 0,
-                vertexOffset: 0,
-                instanceStart: 0);
         }
     }
 }
