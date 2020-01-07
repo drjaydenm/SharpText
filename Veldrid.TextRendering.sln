@@ -3,6 +3,10 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Veldrid.TextRendering", "Veldrid.TextRendering\Veldrid.TextRendering.csproj", "{B24F9E8E-CD6B-4CEC-9906-6B704015CB01}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Typography.OpenFont", "Typography\Typography.OpenFont\Typography.OpenFont.shproj", "{235A071B-8D06-40AE-A5C5-B1CE59715EE9}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Typography.GlyphLayout", "Typography\Typography.GlyphLayout\Typography.GlyphLayout.shproj", "{D8861CF8-C506-472B-8A57-632BD6CA6496}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
