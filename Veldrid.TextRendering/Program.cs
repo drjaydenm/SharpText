@@ -36,6 +36,9 @@ namespace Veldrid.TextRendering
 
             textRenderer = new TextRenderer();
             textRenderer.Initialize(graphicsDevice);
+
+            var font = new Font("Fonts/OpenSans-Regular.woff");
+            var points = font.GetCharacterGlyphPoints('e');
         }
 
         private static void Update()
