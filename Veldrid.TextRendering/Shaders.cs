@@ -4,10 +4,13 @@
     {
         private static string SharedBufferDeclaration = @"
 layout(set = 0, binding = 0) uniform sampler2D textureSampler;
-layout(set = 1, binding = 0) uniform Properties
+layout(set = 1, binding = 0) uniform TextPropertiesBuffer
 {
     float thicknessAndMode;
-    mat3 matrix3;
+    float _padding1;
+    float _padding2;
+    float _padding3;
+    mat4 matrix3;
     vec4 glyphColor;
     vec4 rect;
 };
@@ -20,9 +23,8 @@ precision highp float;
 
 " + SharedBufferDeclaration + @"
 
-layout(location = 0) in vec2 position2;
-layout(location = 1) in vec4 position4;
-layout(location = 2) in vec4 coord4;
+layout(location = 0) in vec4 position4;
+layout(location = 1) in vec4 coord4;
 
 layout(location = 0) out vec2 _coord2;
 layout(location = 1) out vec4 _coord4;
@@ -58,16 +60,14 @@ precision highp float;
 
 " + SharedBufferDeclaration + @"
 
-layout(location = 0) in vec2 position2;
-layout(location = 1) in vec4 position4;
-layout(location = 2) in vec4 coord4;
+layout(location = 0) in vec4 position4;
+layout(location = 1) in vec4 coord4;
 
 layout(location = 0) out vec2 _coord2;
-layout(location = 1) out vec4 _coord4;
 
 void main() {
     _coord2 = position4.zw;
-    gl_Position = vec4(matrix3 * vec3(position4.xy, 1.0), 0.0).xywz;
+    gl_Position = vec4(matrix3 * vec4(position4.xy, 1.0, 1.0)).xywz;
 }
 ";
 
@@ -79,7 +79,6 @@ precision highp float;
 " + SharedBufferDeclaration + @"
 
 layout(location = 0) in vec2 _coord2;
-layout(location = 1) in vec4 _coord4;
 
 layout(location = 0) out vec4 outputColor;
 
@@ -102,11 +101,8 @@ precision highp float;
 " + SharedBufferDeclaration + @"
 
 layout(location = 0) in vec2 position2;
-layout(location = 1) in vec4 position4;
-layout(location = 2) in vec4 coord4;
 
 layout(location = 0) out vec2 _coord2;
-layout(location = 1) out vec4 _coord4;
 
 void main() {
     _coord2 = mix(rect.xy, rect.zw, position2 * 0.5 + 0.5);
@@ -122,7 +118,6 @@ precision highp float;
 " + SharedBufferDeclaration + @"
 
 layout(location = 0) in vec2 _coord2;
-layout(location = 1) in vec4 _coord4;
 
 layout(location = 0) out vec4 outputColor;
 
@@ -159,11 +154,8 @@ precision highp float;
 " + SharedBufferDeclaration + @"
 
 layout(location = 0) in vec2 position2;
-layout(location = 1) in vec4 position4;
-layout(location = 2) in vec4 coord4;
 
 layout(location = 0) out vec2 _coord2;
-layout(location = 1) out vec4 _coord4;
 
 void main() {
     _coord2 = (matrix3 * vec3(position2, 1.0)).xy;
@@ -179,7 +171,6 @@ precision highp float;
 " + SharedBufferDeclaration + @"
 
 layout(location = 0) in vec2 _coord2;
-layout(location = 1) in vec4 _coord4;
 
 layout(location = 0) out vec4 outputColor;
 

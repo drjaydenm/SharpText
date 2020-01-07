@@ -12,14 +12,14 @@ namespace Veldrid.TextRendering
 
     public class GlyphTranslatorToVertices : IGlyphTranslator
     {
-        public VertexPositionColor[] ResultingVertices => vertices.ToArray();
+        public VertexPosition4Coord4[] ResultingVertices => vertices.ToArray();
 
         private float lastMoveX;
         private float lastMoveY;
         private float lastX;
         private float lastY;
         private short contourCount;
-        private List<VertexPositionColor> vertices;
+        private List<VertexPosition4Coord4> vertices;
 
         public void BeginRead(int countourCount)
         {
@@ -79,21 +79,30 @@ namespace Veldrid.TextRendering
 
         public void Reset()
         {
-            vertices = new List<VertexPositionColor>();
+            vertices = new List<VertexPosition4Coord4>();
             lastMoveX = lastMoveY = lastX = lastY = 0;
             contourCount = 0;
         }
 
         private void AppendTriangle(float x1, float y1, float x2, float y2, float x3, float y3, TriangleKind kind)
         {
-            AppendVertex(x1, y1);
-            AppendVertex(x2, y2);
-            AppendVertex(x3, y3);
+            if (kind == TriangleKind.Solid)
+            {
+                AppendVertex(x1, y1, 0, 1);
+                AppendVertex(x2, y2, 0, 1);
+                AppendVertex(x3, y3, 0, 1);
+            }
+            else
+            {
+                AppendVertex(x1, y1, 0, 0);
+                AppendVertex(x2, y2, 0.5f, 0);
+                AppendVertex(x3, y3, 1, 1);
+            }
         }
 
-        private void AppendVertex(float x, float y)
+        private void AppendVertex(float x, float y, float s, float t)
         {
-            vertices.Add(new VertexPositionColor(new Vector2(x, y), RgbaFloat.Black));
+            vertices.Add(new VertexPosition4Coord4(new Vector4(x, y, s, t), Vector4.Zero));
         }
     }
 }
