@@ -3,7 +3,7 @@
     public static class Shaders
     {
         private static string SharedVertexBufferDeclaration = @"
-layout(set = 0, binding = 2) uniform TextVertexPropertiesBuffer
+layout(set = 0, binding = 0) uniform TextVertexPropertiesBuffer
 {
     mat4 matrix3;
     vec4 rect;
@@ -11,9 +11,7 @@ layout(set = 0, binding = 2) uniform TextVertexPropertiesBuffer
 ";
         
         private static string SharedFragmentBufferDeclaration = @"
-layout(set = 0, binding = 0) uniform texture2D textureView;
-layout(set = 0, binding = 1) uniform sampler textureSampler;
-layout(set = 0, binding = 3) uniform TextFragmentPropertiesBuffer
+layout(set = 0, binding = 1) uniform TextFragmentPropertiesBuffer
 {
     float thicknessAndMode;
     float _padding1;
@@ -123,6 +121,9 @@ void main() {
 precision highp float;
 
 " + SharedFragmentBufferDeclaration + @"
+
+layout(set = 1, binding = 0) uniform texture2D textureView;
+layout(set = 1, binding = 1) uniform sampler textureSampler;
 
 layout(location = 0) in vec2 _coord2;
 
