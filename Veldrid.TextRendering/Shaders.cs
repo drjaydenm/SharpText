@@ -71,7 +71,7 @@ layout(location = 1) in vec2 coord2;
 layout(location = 0) out vec2 _coord2;
 
 void main() {
-    _coord2 = coord2.xy;
+    _coord2 = coord2;
     gl_Position = matrix4 * vec4(position3.xy, 1.0, 1.0);
 }
 ";
@@ -88,13 +88,14 @@ layout(location = 0) in vec2 _coord2;
 layout(location = 0) out vec4 outputColor;
 
 void main() {
+    // Calculate the shaded area of the quadratic curve
     if (_coord2.x * _coord2.x - _coord2.y > 0.0) {
         discard;
     }
 
     // Upper 4 bits: front faces
     // Lower 4 bits: back faces
-    outputColor = glyphColor * (gl_FrontFacing ? 16.0 / 255.0 : 1.0 / 255.0);
+    outputColor = glyphColor * (gl_FrontFacing ? 64.0 / 255.0 : 16.0 / 255.0);
 }
 ";
 

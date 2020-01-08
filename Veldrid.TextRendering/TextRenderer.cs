@@ -46,6 +46,15 @@ namespace Veldrid.TextRendering
         private Framebuffer glyphTextureFramebuffer;
         private Shader[] glyphShaders;
         private Shader[] textShaders;
+        private Vector2[] jitterPattern = new[]
+        {
+            new Vector2(-1 / 12f, -5 / 12f),
+            new Vector2( 1 / 12f,  1 / 12f),
+            new Vector2( 3 / 12f, -1 / 12f),
+            new Vector2( 5 / 12f,  5 / 12f),
+            new Vector2( 7 / 12f, -3 / 12f),
+            new Vector2( 9 / 12f,  3 / 12f)
+        };
 
         public TextRenderer(GraphicsDevice graphicsDevice, Font font)
         {
@@ -63,12 +72,12 @@ namespace Veldrid.TextRendering
                 var glyph = font.GetGlyphByCharacter(letter);
                 var scale = 1f / font.FontSize;
 
-                //glyphVertices = font.GlyphToVertices(glyph);
-                glyphVertices = KnownGlyphVertices.OpenSansLowerT.ToArray();
+                glyphVertices = font.GlyphToVertices(glyph);
+                /*glyphVertices = KnownGlyphVertices.FreeSerifLowerT.ToArray();
                 for (var i = 0; i < glyphVertices.Length; i++)
                 {
                     glyphVertices[i].Position *= scale;
-                }
+                }*/
 
                 // Only the first letter for now
                 break;
@@ -88,19 +97,30 @@ namespace Veldrid.TextRendering
             commandList.UpdateBuffer(glyphVertexBuffer, 0, glyphVertices);
             commandList.SetVertexBuffer(0, glyphVertexBuffer);
 
-            var matrixA = Matrix4x4.CreateTranslation(-1, 0, 0);
-            textVertexProperties.Transform = matrixA;
-            commandList.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
-
-            textFragmentProperties.GlyphColor = new RgbaFloat(0, 0.5f, 1, 1);
-            commandList.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
-
             commandList.SetPipeline(glyphPipeline);
             commandList.SetGraphicsResourceSet(0, textPropertiesSet);
             commandList.SetFramebuffer(glyphTextureFramebuffer);
 
             commandList.ClearColorTarget(0, new RgbaFloat(0, 0, 0, 0));
-            commandList.Draw((uint)glyphVertices.Length);
+
+            var matrixA = Matrix4x4.CreateTranslation(-1, 0, 0);
+
+            for (var i = 0; i < jitterPattern.Length; i++)
+            {
+                var jitter = jitterPattern[i];
+
+                var matrixB = Matrix4x4.CreateTranslation(new Vector3(jitter, 0) * (1f / font.FontSize)) * matrixA;
+                textVertexProperties.Transform = matrixB;
+                commandList.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
+
+                if (i % 2 == 0)
+                {
+                    textFragmentProperties.GlyphColor = new RgbaFloat(i == 0 ? 1 : 0, i == 2 ? 1 : 0, i == 4 ? 1 : 0, 0);
+                    commandList.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
+                }
+
+                commandList.Draw((uint)glyphVertices.Length);
+            }
 
             // 2nd pass
             textFragmentProperties.GlyphColor = new RgbaFloat(0, 0, 0, 0);
@@ -122,9 +142,9 @@ namespace Veldrid.TextRendering
             quadVertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition2.SizeInBytes * 4, BufferUsage.VertexBuffer));
             quadVertices = new VertexPosition2[]
             {
-                new VertexPosition2(new Vector2(-1, -1)),
-                new VertexPosition2(new Vector2(-1, 1)),
-                new VertexPosition2(new Vector2(1, -1)),
+                new VertexPosition2(new Vector2(0, 0)),
+                new VertexPosition2(new Vector2(0, 1)),
+                new VertexPosition2(new Vector2(1, 0)),
                 new VertexPosition2(new Vector2(1, 1))
             };
             graphicsDevice.UpdateBuffer(quadVertexBuffer, 0, quadVertices);
@@ -175,11 +195,11 @@ namespace Veldrid.TextRendering
                 blendState: new BlendStateDescription(RgbaFloat.White,
                     new BlendAttachmentDescription(
                         blendEnabled: true,
-                        sourceColorFactor: BlendFactor.Zero,
-                        destinationColorFactor: BlendFactor.SourceColor,
+                        sourceColorFactor: BlendFactor.SourceAlpha,
+                        destinationColorFactor: BlendFactor.Zero,
                         colorFunction: BlendFunction.Add,
-                        sourceAlphaFactor: BlendFactor.Zero,
-                        destinationAlphaFactor: BlendFactor.SourceAlpha,
+                        sourceAlphaFactor: BlendFactor.SourceAlpha,
+                        destinationAlphaFactor: BlendFactor.Zero,
                         alphaFunction: BlendFunction.Add)),
                 depthStencilStateDescription: new DepthStencilStateDescription(
                     depthTestEnabled: true,
@@ -201,7 +221,15 @@ namespace Veldrid.TextRendering
             outputPipeline = factory.CreateGraphicsPipeline(pipelineDescription);
 
             pipelineDescription.Outputs = new OutputDescription(null, new OutputAttachmentDescription(colorFormat));
-            pipelineDescription.BlendState = BlendStateDescription.SingleAdditiveBlend;
+            pipelineDescription.BlendState = new BlendStateDescription(RgbaFloat.White,
+                new BlendAttachmentDescription(
+                    blendEnabled: true,
+                    sourceColorFactor: BlendFactor.SourceColor,
+                    destinationColorFactor: BlendFactor.One,
+                    colorFunction: BlendFunction.Add,
+                    sourceAlphaFactor: BlendFactor.SourceAlpha,
+                    destinationAlphaFactor: BlendFactor.One,
+                    alphaFunction: BlendFunction.Add));
             pipelineDescription.ResourceLayouts = new ResourceLayout[] { textPropertiesLayout };
             pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleList;
             pipelineDescription.RasterizerState = new RasterizerStateDescription(
