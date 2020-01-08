@@ -1,11 +1,11 @@
-﻿namespace Veldrid.TextRendering
+namespace Veldrid.TextRendering
 {
     public static class Shaders
     {
         private static string SharedVertexBufferDeclaration = @"
 layout(set = 0, binding = 0) uniform TextVertexPropertiesBuffer
 {
-    mat4 matrix3;
+    mat4 matrix4;
     vec4 rect;
 };
 ";
@@ -37,7 +37,7 @@ layout(location = 1) out vec4 _coord4;
 void main() {
     _coord2 = position4.zw;
     _coord4 = coord4;
-    gl_Position = vec4(matrix3 * vec3(position4.xy, 1.0), 0.0).xywz;
+    gl_Position = vec4(matrix4 * vec3(position4.xy, 1.0), 0.0).xywz;
 }
 ";
 
@@ -65,13 +65,14 @@ precision highp float;
 
 " + SharedVertexBufferDeclaration + @"
 
-layout(location = 0) in vec4 position4;
+layout(location = 0) in vec3 position3;
+layout(location = 1) in vec2 coord2;
 
 layout(location = 0) out vec2 _coord2;
 
 void main() {
-    _coord2 = position4.zw;
-    gl_Position = vec4(matrix3 * vec4(position4.xy, 0.0, 1.0));
+    _coord2 = coord2.xy;
+    gl_Position = matrix4 * vec4(position3.xy, 1.0, 1.0);
 }
 ";
 
@@ -165,7 +166,7 @@ layout(location = 0) in vec2 position2;
 layout(location = 0) out vec2 _coord2;
 
 void main() {
-    _coord2 = (matrix3 * vec4(position2, 0.0, 1.0)).xy;
+    _coord2 = (matrix4 * vec4(position2, 0.0, 1.0)).xy;
     gl_Position = vec4(position2, 0.0, 1.0);
 }
 ";

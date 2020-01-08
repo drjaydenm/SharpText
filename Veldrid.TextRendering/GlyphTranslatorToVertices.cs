@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Numerics;
 using Typography.OpenFont;
 
@@ -12,16 +13,16 @@ namespace Veldrid.TextRendering
 
     public class GlyphTranslatorToVertices : IGlyphTranslator
     {
-        public VertexPosition4[] ResultingVertices => vertices.ToArray();
+        public VertexPosition3Coord2[] ResultingVertices => vertices.ToArray();
 
         private float lastMoveX;
         private float lastMoveY;
         private float lastX;
         private float lastY;
         private short contourCount;
-        private List<VertexPosition4> vertices;
+        private List<VertexPosition3Coord2> vertices;
 
-        public void BeginRead(int countourCount)
+        public void BeginRead(int contourCount)
         {
             Reset();
         }
@@ -39,8 +40,12 @@ namespace Veldrid.TextRendering
 
         public void CloseContour()
         {
+            lastX = lastMoveX;
+            lastY = lastMoveY;
+            contourCount = 0;
         }
 
+        // Quadratic bezier curve
         public void Curve3(float x1, float y1, float x2, float y2)
         {
             if (++contourCount >= 2)
@@ -53,17 +58,10 @@ namespace Veldrid.TextRendering
             lastY = y2;
         }
 
+        // Cubic bezier curve
         public void Curve4(float x1, float y1, float x2, float y2, float x3, float y3)
         {
-            if (++contourCount >= 2)
-            {
-                AppendTriangle(lastMoveX, lastMoveY, lastX, lastY, x2, y2, TriangleKind.Solid);
-            }
-
-            AppendTriangle(lastX, lastY, x1, y1, x2, y2, TriangleKind.QuadraticCurve);
-            AppendTriangle(lastX, lastY, x2, y2, x3, y3, TriangleKind.QuadraticCurve);
-            lastX = x3;
-            lastY = y3;
+            throw new NotImplementedException();
         }
 
         public void LineTo(float x, float y)
@@ -79,7 +77,7 @@ namespace Veldrid.TextRendering
 
         public void Reset()
         {
-            vertices = new List<VertexPosition4>();
+            vertices = new List<VertexPosition3Coord2>();
             lastMoveX = lastMoveY = lastX = lastY = 0;
             contourCount = 0;
         }
@@ -102,7 +100,7 @@ namespace Veldrid.TextRendering
 
         private void AppendVertex(float x, float y, float s, float t)
         {
-            vertices.Add(new VertexPosition4(new Vector4(x, y, s, t)));
+            vertices.Add(new VertexPosition3Coord2(new Vector3(x, y, 0), new Vector2(s, t)));
         }
     }
 }

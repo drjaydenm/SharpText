@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -34,7 +35,7 @@ namespace Veldrid.TextRendering
         private DeviceBuffer textFragmentPropertiesBuffer;
         private Pipeline outputPipeline;
         private Pipeline glyphPipeline;
-        private VertexPosition4[] glyphVertices;
+        private VertexPosition3Coord2[] glyphVertices = new VertexPosition3Coord2[0];
         private VertexPosition2[] quadVertices;
         private TextVertexProperties textVertexProperties;
         private TextFragmentProperties textFragmentProperties;
@@ -62,7 +63,12 @@ namespace Veldrid.TextRendering
                 var glyph = font.GetGlyphByCharacter(letter);
                 var scale = 1f / font.FontSize;
 
-                glyphVertices = font.GlyphToVertices(glyph);
+                //glyphVertices = font.GlyphToVertices(glyph);
+                glyphVertices = KnownGlyphVertices.OpenSansLowerT.ToArray();
+                for (var i = 0; i < glyphVertices.Length; i++)
+                {
+                    glyphVertices[i].Position *= scale;
+                }
 
                 // Only the first letter for now
                 break;
@@ -71,7 +77,7 @@ namespace Veldrid.TextRendering
 
         public void Draw(CommandList commandList)
         {
-            var requiredBufferSize = VertexPosition4.SizeInBytes * (uint)glyphVertices.Length;
+            var requiredBufferSize = VertexPosition3Coord2.SizeInBytes * (uint)glyphVertices.Length;
             if (glyphVertexBuffer.SizeInBytes < requiredBufferSize)
             {
                 glyphVertexBuffer.Dispose();
@@ -83,8 +89,7 @@ namespace Veldrid.TextRendering
             commandList.SetVertexBuffer(0, glyphVertexBuffer);
 
             var matrixA = Matrix4x4.CreateTranslation(-1, 0, 0);
-            var matrixB = Matrix4x4.CreateScale(1f / font.FontSize) * matrixA;
-            textVertexProperties.Transform = matrixB;
+            textVertexProperties.Transform = matrixA;
             commandList.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
 
             textFragmentProperties.GlyphColor = new RgbaFloat(0, 0.5f, 1, 1);
@@ -113,13 +118,13 @@ namespace Veldrid.TextRendering
         {
             var factory = graphicsDevice.ResourceFactory;
 
-            glyphVertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition4.SizeInBytes, BufferUsage.VertexBuffer));
+            glyphVertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition3Coord2.SizeInBytes, BufferUsage.VertexBuffer));
             quadVertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition2.SizeInBytes * 4, BufferUsage.VertexBuffer));
             quadVertices = new VertexPosition2[]
             {
-                new VertexPosition2(new Vector2(0, 0)),
-                new VertexPosition2(new Vector2(0, 1)),
-                new VertexPosition2(new Vector2(1, 0)),
+                new VertexPosition2(new Vector2(-1, -1)),
+                new VertexPosition2(new Vector2(-1, 1)),
+                new VertexPosition2(new Vector2(1, -1)),
                 new VertexPosition2(new Vector2(1, 1))
             };
             graphicsDevice.UpdateBuffer(quadVertexBuffer, 0, quadVertices);
@@ -195,13 +200,18 @@ namespace Veldrid.TextRendering
             );
             outputPipeline = factory.CreateGraphicsPipeline(pipelineDescription);
 
-            pipelineDescription.DepthStencilState = new DepthStencilStateDescription(false, false, ComparisonKind.Never);
             pipelineDescription.Outputs = new OutputDescription(null, new OutputAttachmentDescription(colorFormat));
             pipelineDescription.BlendState = BlendStateDescription.SingleAdditiveBlend;
             pipelineDescription.ResourceLayouts = new ResourceLayout[] { textPropertiesLayout };
             pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleList;
+            pipelineDescription.RasterizerState = new RasterizerStateDescription(
+                cullMode: FaceCullMode.None,
+                fillMode: PolygonFillMode.Solid,
+                frontFace: FrontFace.CounterClockwise,
+                depthClipEnabled: false,
+                scissorTestEnabled: false);
             pipelineDescription.ShaderSet = new ShaderSetDescription(
-                vertexLayouts: new[] { VertexPosition4.LayoutDescription },
+                vertexLayouts: new[] { VertexPosition3Coord2.LayoutDescription },
                 shaders: glyphShaders);
             glyphPipeline = factory.CreateGraphicsPipeline(pipelineDescription);
         }

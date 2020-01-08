@@ -47,14 +47,19 @@ namespace Veldrid.TextRendering
             return glyph;
         }
 
-        public VertexPosition4[] GlyphToVertices(Glyph glyph)
+        public VertexPosition3Coord2[] GlyphToVertices(Glyph glyph)
         {
             pathBuilder.BuildFromGlyph(glyph, FontSize);
 
-            pathTranslator.Reset();
             pathBuilder.ReadShapes(pathTranslator);
+            var vertices = pathTranslator.ResultingVertices;
 
-            return pathTranslator.ResultingVertices;
+            for (var i = 0; i < vertices.Length; i++)
+            {
+                vertices[i].Position *= 1f / FontSize;
+            }
+
+            return vertices;
         }
 
         private static void SetupWoffDecompressorIfRequired()
