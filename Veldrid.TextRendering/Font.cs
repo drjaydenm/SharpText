@@ -47,7 +47,7 @@ namespace Veldrid.TextRendering
             return glyph;
         }
 
-        public VertexPosition4Coord4[] GlyphToVertices(Glyph glyph)
+        public VertexPosition4[] GlyphToVertices(Glyph glyph)
         {
             pathBuilder.BuildFromGlyph(glyph, FontSize);
 

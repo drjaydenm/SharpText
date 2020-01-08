@@ -20,7 +20,7 @@ namespace Veldrid.TextRendering
         private float _padding1;
         private float _padding2;
         private float _padding3;
-        public Vector4 GlyphColor;
+        public RgbaFloat GlyphColor;
     }
 
     public class TextRenderer
@@ -34,7 +34,7 @@ namespace Veldrid.TextRendering
         private DeviceBuffer textFragmentPropertiesBuffer;
         private Pipeline outputPipeline;
         private Pipeline glyphPipeline;
-        private VertexPosition4Coord4[] glyphVertices;
+        private VertexPosition4[] glyphVertices;
         private VertexPosition2[] quadVertices;
         private TextVertexProperties textVertexProperties;
         private TextFragmentProperties textFragmentProperties;
@@ -71,7 +71,7 @@ namespace Veldrid.TextRendering
 
         public void Draw(CommandList commandList)
         {
-            var requiredBufferSize = VertexPosition4Coord4.SizeInBytes * (uint)glyphVertices.Length;
+            var requiredBufferSize = VertexPosition4.SizeInBytes * (uint)glyphVertices.Length;
             if (glyphVertexBuffer.SizeInBytes < requiredBufferSize)
             {
                 glyphVertexBuffer.Dispose();
@@ -87,6 +87,9 @@ namespace Veldrid.TextRendering
             textVertexProperties.Transform = matrixB;
             commandList.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
 
+            textFragmentProperties.GlyphColor = new RgbaFloat(0, 0.5f, 1, 1);
+            commandList.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
+
             commandList.SetPipeline(glyphPipeline);
             commandList.SetGraphicsResourceSet(0, textPropertiesSet);
             commandList.SetFramebuffer(glyphTextureFramebuffer);
@@ -95,6 +98,9 @@ namespace Veldrid.TextRendering
             commandList.Draw((uint)glyphVertices.Length);
 
             // 2nd pass
+            textFragmentProperties.GlyphColor = new RgbaFloat(0, 0, 0, 0);
+            commandList.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
+
             commandList.SetPipeline(outputPipeline);
             commandList.SetFramebuffer(graphicsDevice.MainSwapchain.Framebuffer);
             commandList.SetGraphicsResourceSet(0, textPropertiesSet);
@@ -107,7 +113,7 @@ namespace Veldrid.TextRendering
         {
             var factory = graphicsDevice.ResourceFactory;
 
-            glyphVertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition4Coord4.SizeInBytes, BufferUsage.VertexBuffer));
+            glyphVertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition4.SizeInBytes, BufferUsage.VertexBuffer));
             quadVertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition2.SizeInBytes * 4, BufferUsage.VertexBuffer));
             quadVertices = new VertexPosition2[]
             {
@@ -128,7 +134,7 @@ namespace Veldrid.TextRendering
             textFragmentProperties = new TextFragmentProperties
             {
                 ThicknessAndMode = 0, // TODO support other modes
-                GlyphColor = new Vector4(0, 0.5f, 1, 1)
+                GlyphColor = new RgbaFloat(0, 0.5f, 1, 1)
             };
             graphicsDevice.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
             graphicsDevice.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
@@ -161,7 +167,15 @@ namespace Veldrid.TextRendering
                 graphicsDevice.LinearSampler));
 
             var pipelineDescription = new GraphicsPipelineDescription(
-                blendState: BlendStateDescription.SingleOverrideBlend,
+                blendState: new BlendStateDescription(RgbaFloat.White,
+                    new BlendAttachmentDescription(
+                        blendEnabled: true,
+                        sourceColorFactor: BlendFactor.Zero,
+                        destinationColorFactor: BlendFactor.SourceColor,
+                        colorFunction: BlendFunction.Add,
+                        sourceAlphaFactor: BlendFactor.Zero,
+                        destinationAlphaFactor: BlendFactor.SourceAlpha,
+                        alphaFunction: BlendFunction.Add)),
                 depthStencilStateDescription: new DepthStencilStateDescription(
                     depthTestEnabled: true,
                     depthWriteEnabled: true,
@@ -185,8 +199,9 @@ namespace Veldrid.TextRendering
             pipelineDescription.Outputs = new OutputDescription(null, new OutputAttachmentDescription(colorFormat));
             pipelineDescription.BlendState = BlendStateDescription.SingleAdditiveBlend;
             pipelineDescription.ResourceLayouts = new ResourceLayout[] { textPropertiesLayout };
+            pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleList;
             pipelineDescription.ShaderSet = new ShaderSetDescription(
-                vertexLayouts: new[] { VertexPosition4Coord4.LayoutDescription },
+                vertexLayouts: new[] { VertexPosition4.LayoutDescription },
                 shaders: glyphShaders);
             glyphPipeline = factory.CreateGraphicsPipeline(pipelineDescription);
         }

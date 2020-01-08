@@ -12,14 +12,14 @@ namespace Veldrid.TextRendering
 
     public class GlyphTranslatorToVertices : IGlyphTranslator
     {
-        public VertexPosition4Coord4[] ResultingVertices => vertices.ToArray();
+        public VertexPosition4[] ResultingVertices => vertices.ToArray();
 
         private float lastMoveX;
         private float lastMoveY;
         private float lastX;
         private float lastY;
         private short contourCount;
-        private List<VertexPosition4Coord4> vertices;
+        private List<VertexPosition4> vertices;
 
         public void BeginRead(int countourCount)
         {
@@ -79,7 +79,7 @@ namespace Veldrid.TextRendering
 
         public void Reset()
         {
-            vertices = new List<VertexPosition4Coord4>();
+            vertices = new List<VertexPosition4>();
             lastMoveX = lastMoveY = lastX = lastY = 0;
             contourCount = 0;
         }
@@ -102,7 +102,7 @@ namespace Veldrid.TextRendering
 
         private void AppendVertex(float x, float y, float s, float t)
         {
-            vertices.Add(new VertexPosition4Coord4(new Vector4(x, y, s, t), Vector4.Zero));
+            vertices.Add(new VertexPosition4(new Vector4(x, y, s, t)));
         }
     }
 }

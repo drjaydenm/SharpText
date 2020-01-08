@@ -66,7 +66,6 @@ precision highp float;
 " + SharedVertexBufferDeclaration + @"
 
 layout(location = 0) in vec4 position4;
-layout(location = 1) in vec4 coord4;
 
 layout(location = 0) out vec2 _coord2;
 
