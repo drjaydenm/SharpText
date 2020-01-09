@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -24,6 +25,19 @@ namespace Veldrid.TextRendering
         public RgbaFloat GlyphColor;
     }
 
+    public struct DrawableText
+    {
+        public string Text;
+        public DrawableGlyph[] Glyphs;
+        public Vector2 Position;
+    }
+
+    public struct DrawableGlyph
+    {
+        public VertexPosition3Coord2[] Vertices;
+        public float AdvanceX;
+    }
+
     public class TextRenderer
     {
         private readonly GraphicsDevice graphicsDevice;
@@ -35,7 +49,6 @@ namespace Veldrid.TextRendering
         private DeviceBuffer textFragmentPropertiesBuffer;
         private Pipeline outputPipeline;
         private Pipeline glyphPipeline;
-        private VertexPosition3Coord2[] glyphVertices = new VertexPosition3Coord2[0];
         private VertexPosition2[] quadVertices;
         private TextVertexProperties textVertexProperties;
         private TextFragmentProperties textFragmentProperties;
@@ -55,36 +68,74 @@ namespace Veldrid.TextRendering
             new Vector2( 7 / 12f, -3 / 12f),
             new Vector2( 9 / 12f,  3 / 12f)
         };
+        private List<DrawableText> textToDraw;
 
         public TextRenderer(GraphicsDevice graphicsDevice, Font font)
         {
             this.graphicsDevice = graphicsDevice;
             this.font = font;
+            
+            textToDraw = new List<DrawableText>();
 
             Initialize();
         }
 
         public void DrawText(string text, Vector2 coords)
         {
-            foreach (var letter in text)
+            var drawable = new DrawableText
             {
-                var fontUnitsPerEm = font.UnitsPerEm;
-                var glyph = font.GetGlyphByCharacter(letter);
-                var scale = 1f / font.FontSize;
+                Text = text,
+                Glyphs = new DrawableGlyph[text.Length],
+                Position = coords
+            };
 
-                glyphVertices = font.GlyphToVertices(glyph);
-                /*glyphVertices = KnownGlyphVertices.FreeSerifLowerT.ToArray();
-                for (var i = 0; i < glyphVertices.Length; i++)
+            for (var i = 0; i < text.Length; i++)
+            {
+                var glyph = font.GetGlyphByCharacter(text[i]);
+
+                drawable.Glyphs[i] = new DrawableGlyph
                 {
-                    glyphVertices[i].Position *= scale;
-                }*/
-
-                // Only the first letter for now
-                break;
+                    Vertices = font.GlyphToVertices(glyph),
+                    AdvanceX = (glyph.Bounds.XMax - glyph.Bounds.XMin) * (1f / font.FontSize)
+                };
             }
+
+            textToDraw.Add(drawable);
         }
 
         public void Draw(CommandList commandList)
+        {
+            commandList.SetPipeline(glyphPipeline);
+            commandList.SetGraphicsResourceSet(0, textPropertiesSet);
+            commandList.SetFramebuffer(glyphTextureFramebuffer);
+
+            commandList.ClearColorTarget(0, new RgbaFloat(0, 0, 0, 0));
+
+            var advanceX = 0f;
+            foreach (var drawable in textToDraw)
+            {
+                for (var i = 0; i < drawable.Glyphs.Length; i++)
+                {
+                    DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, 0));
+                    advanceX += drawable.Glyphs[i].AdvanceX;
+                }
+            }
+
+            // 2nd pass
+            textFragmentProperties.GlyphColor = new RgbaFloat(0, 0, 0, 0);
+            commandList.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
+
+            commandList.SetPipeline(outputPipeline);
+            commandList.SetFramebuffer(graphicsDevice.MainSwapchain.Framebuffer);
+            commandList.SetGraphicsResourceSet(0, textPropertiesSet);
+            commandList.SetGraphicsResourceSet(1, textTextureSet);
+            commandList.SetVertexBuffer(0, quadVertexBuffer);
+            commandList.Draw((uint)quadVertices.Length);
+
+            textToDraw.Clear();
+        }
+
+        private void DrawGlyph(CommandList commandList, VertexPosition3Coord2[] glyphVertices, Vector2 coord)
         {
             var requiredBufferSize = VertexPosition3Coord2.SizeInBytes * (uint)glyphVertices.Length;
             if (glyphVertexBuffer.SizeInBytes < requiredBufferSize)
@@ -97,13 +148,7 @@ namespace Veldrid.TextRendering
             commandList.UpdateBuffer(glyphVertexBuffer, 0, glyphVertices);
             commandList.SetVertexBuffer(0, glyphVertexBuffer);
 
-            commandList.SetPipeline(glyphPipeline);
-            commandList.SetGraphicsResourceSet(0, textPropertiesSet);
-            commandList.SetFramebuffer(glyphTextureFramebuffer);
-
-            commandList.ClearColorTarget(0, new RgbaFloat(0, 0, 0, 0));
-
-            var matrixA = Matrix4x4.CreateTranslation(-1, 0, 0);
+            var matrixA = Matrix4x4.CreateTranslation(-1 + coord.X, 0 + coord.Y, 0);
 
             for (var i = 0; i < jitterPattern.Length; i++)
             {
@@ -121,17 +166,6 @@ namespace Veldrid.TextRendering
 
                 commandList.Draw((uint)glyphVertices.Length);
             }
-
-            // 2nd pass
-            textFragmentProperties.GlyphColor = new RgbaFloat(0, 0, 0, 0);
-            commandList.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
-
-            commandList.SetPipeline(outputPipeline);
-            commandList.SetFramebuffer(graphicsDevice.MainSwapchain.Framebuffer);
-            commandList.SetGraphicsResourceSet(0, textPropertiesSet);
-            commandList.SetGraphicsResourceSet(1, textTextureSet);
-            commandList.SetVertexBuffer(0, quadVertexBuffer);
-            commandList.Draw((uint)quadVertices.Length);
         }
 
         private void Initialize()
