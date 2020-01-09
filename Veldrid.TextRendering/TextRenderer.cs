@@ -30,6 +30,7 @@ namespace Veldrid.TextRendering
         public string Text;
         public DrawableGlyph[] Glyphs;
         public Vector2 Position;
+        public RgbaFloat Color;
     }
 
     public struct DrawableGlyph
@@ -48,6 +49,7 @@ namespace Veldrid.TextRendering
         private DeviceBuffer textVertexPropertiesBuffer;
         private DeviceBuffer textFragmentPropertiesBuffer;
         private Pipeline outputPipeline;
+        private Pipeline outputColorPipeline;
         private Pipeline glyphPipeline;
         private VertexPosition2[] quadVertices;
         private TextVertexProperties textVertexProperties;
@@ -80,13 +82,14 @@ namespace Veldrid.TextRendering
             Initialize();
         }
 
-        public void DrawText(string text, Vector2 coords)
+        public void DrawText(string text, Vector2 coords, RgbaFloat color)
         {
             var drawable = new DrawableText
             {
                 Text = text,
                 Glyphs = new DrawableGlyph[text.Length],
-                Position = coords
+                Position = coords,
+                Color = color
             };
 
             for (var i = 0; i < text.Length; i++)
@@ -106,35 +109,38 @@ namespace Veldrid.TextRendering
 
         public void Draw(CommandList commandList)
         {
-            commandList.SetPipeline(glyphPipeline);
-            commandList.SetGraphicsResourceSet(0, textPropertiesSet);
-            commandList.SetFramebuffer(glyphTextureFramebuffer);
+            var textGroupedByColor = textToDraw.GroupBy(t => t.Color);
 
-            commandList.ClearColorTarget(0, new RgbaFloat(0, 0, 0, 0));
-
-            var advanceX = 0f;
-            foreach (var drawable in textToDraw)
+            foreach (var colorGroup in textGroupedByColor)
             {
-                for (var i = 0; i < drawable.Glyphs.Length; i++)
+                commandList.SetPipeline(glyphPipeline);
+                commandList.SetGraphicsResourceSet(0, textPropertiesSet);
+                commandList.SetFramebuffer(glyphTextureFramebuffer);
+
+                commandList.ClearColorTarget(0, new RgbaFloat(0, 0, 0, 0));
+
+                var advanceX = 0f;
+                foreach (var drawable in colorGroup)
                 {
-                    // TODO fix negative height
-                    DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, -(2f / graphicsDevice.SwapchainFramebuffer.Height) * 20));
-                    advanceX += drawable.Glyphs[i].AdvanceX * (1f / graphicsDevice.SwapchainFramebuffer.Width);
+                    for (var i = 0; i < drawable.Glyphs.Length; i++)
+                    {
+                        // TODO fix negative height
+                        DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, -(2f / graphicsDevice.SwapchainFramebuffer.Height) * 20));
+                        advanceX += drawable.Glyphs[i].AdvanceX * (1f / graphicsDevice.SwapchainFramebuffer.Width);
+                    }
+
+                    textToDraw.Remove(drawable);
+                }
+
+                // 2nd pass, render everything to the framebuffer
+                DrawOutput(commandList, new RgbaFloat(0, 0, 0, 0), false);
+
+                // We need to do a second pass if we would like a color other than black text
+                if (colorGroup.Key != new RgbaFloat(0, 0, 0, 1))
+                {
+                    DrawOutput(commandList, colorGroup.Key, true);
                 }
             }
-
-            // 2nd pass
-            textFragmentProperties.GlyphColor = new RgbaFloat(0, 0, 0, 0);
-            commandList.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
-
-            commandList.SetPipeline(outputPipeline);
-            commandList.SetFramebuffer(graphicsDevice.MainSwapchain.Framebuffer);
-            commandList.SetGraphicsResourceSet(0, textPropertiesSet);
-            commandList.SetGraphicsResourceSet(1, textTextureSet);
-            commandList.SetVertexBuffer(0, quadVertexBuffer);
-            commandList.Draw((uint)quadVertices.Length);
-
-            textToDraw.Clear();
         }
 
         private void DrawGlyph(CommandList commandList, VertexPosition3Coord2[] glyphVertices, Vector2 coord)
@@ -170,6 +176,19 @@ namespace Veldrid.TextRendering
 
                 commandList.Draw((uint)glyphVertices.Length);
             }
+        }
+
+        private void DrawOutput(CommandList commandList, RgbaFloat color, bool secondPass)
+        {
+            textFragmentProperties.GlyphColor = color;
+            commandList.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
+
+            commandList.SetPipeline(secondPass ? outputColorPipeline : outputPipeline);
+            commandList.SetFramebuffer(graphicsDevice.MainSwapchain.Framebuffer);
+            commandList.SetGraphicsResourceSet(0, textPropertiesSet);
+            commandList.SetGraphicsResourceSet(1, textTextureSet);
+            commandList.SetVertexBuffer(0, quadVertexBuffer);
+            commandList.Draw((uint)quadVertices.Length);
         }
 
         private void Initialize()
@@ -230,6 +249,16 @@ namespace Veldrid.TextRendering
                 glyphTextureView,
                 graphicsDevice.LinearSampler));
 
+            var additiveBlendState = new BlendStateDescription(RgbaFloat.White,
+                new BlendAttachmentDescription(
+                    blendEnabled: true,
+                    sourceColorFactor: BlendFactor.One,
+                    destinationColorFactor: BlendFactor.One,
+                    colorFunction: BlendFunction.Add,
+                    sourceAlphaFactor: BlendFactor.One,
+                    destinationAlphaFactor: BlendFactor.One,
+                    alphaFunction: BlendFunction.Add));
+
             var pipelineDescription = new GraphicsPipelineDescription(
                 blendState: new BlendStateDescription(RgbaFloat.White,
                     new BlendAttachmentDescription(
@@ -260,16 +289,11 @@ namespace Veldrid.TextRendering
             );
             outputPipeline = factory.CreateGraphicsPipeline(pipelineDescription);
 
+            pipelineDescription.BlendState = additiveBlendState;
+            outputColorPipeline = factory.CreateGraphicsPipeline(pipelineDescription);
+
             pipelineDescription.Outputs = new OutputDescription(null, new OutputAttachmentDescription(colorFormat));
-            pipelineDescription.BlendState = new BlendStateDescription(RgbaFloat.White,
-                new BlendAttachmentDescription(
-                    blendEnabled: true,
-                    sourceColorFactor: BlendFactor.One,
-                    destinationColorFactor: BlendFactor.One,
-                    colorFunction: BlendFunction.Add,
-                    sourceAlphaFactor: BlendFactor.One,
-                    destinationAlphaFactor: BlendFactor.One,
-                    alphaFunction: BlendFunction.Add));
+            pipelineDescription.BlendState = additiveBlendState;
             pipelineDescription.ResourceLayouts = new ResourceLayout[] { textPropertiesLayout };
             pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleList;
             pipelineDescription.RasterizerState = new RasterizerStateDescription(
