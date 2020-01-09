@@ -35,7 +35,7 @@ namespace Veldrid.TextRendering
             factory = graphicsDevice.ResourceFactory;
             commandList = factory.CreateCommandList();
 
-            var font = new Font("Fonts/OpenSans-Regular.woff", 1000);
+            var font = new Font("Fonts/OpenSans-Regular.woff", 16);
             textRenderer = new TextRenderer(graphicsDevice, font);
         }
 
@@ -46,7 +46,7 @@ namespace Veldrid.TextRendering
                 window.Close();
             }
 
-            textRenderer.DrawText("test", Vector2.Zero);
+            textRenderer.DrawText("testing 123", Vector2.Zero);
         }
 
         private static void Draw()

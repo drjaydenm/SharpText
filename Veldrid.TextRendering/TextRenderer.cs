@@ -96,7 +96,8 @@ namespace Veldrid.TextRendering
                 drawable.Glyphs[i] = new DrawableGlyph
                 {
                     Vertices = font.GlyphToVertices(glyph),
-                    AdvanceX = (glyph.Bounds.XMax - glyph.Bounds.XMin) * (1f / font.FontSize)
+                    // TODO calculate this properly
+                    AdvanceX = (glyph.Bounds.XMax - glyph.Bounds.XMin) * (1f / font.FontSizeInPixels * 0.55f)
                 };
             }
 
@@ -116,8 +117,9 @@ namespace Veldrid.TextRendering
             {
                 for (var i = 0; i < drawable.Glyphs.Length; i++)
                 {
-                    DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, 0));
-                    advanceX += drawable.Glyphs[i].AdvanceX;
+                    // TODO fix negative height
+                    DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, -(2f / graphicsDevice.SwapchainFramebuffer.Height) * 20));
+                    advanceX += drawable.Glyphs[i].AdvanceX * (1f / graphicsDevice.SwapchainFramebuffer.Width);
                 }
             }
 
@@ -148,13 +150,15 @@ namespace Veldrid.TextRendering
             commandList.UpdateBuffer(glyphVertexBuffer, 0, glyphVertices);
             commandList.SetVertexBuffer(0, glyphVertexBuffer);
 
-            var matrixA = Matrix4x4.CreateTranslation(-1 + coord.X, 0 + coord.Y, 0);
+            var matrixA = Matrix4x4.CreateScale(2f / graphicsDevice.SwapchainFramebuffer.Width, 2f / graphicsDevice.SwapchainFramebuffer.Height, 1)
+                * Matrix4x4.CreateTranslation(-1, 1, 0)
+                * Matrix4x4.CreateTranslation(coord.X, coord.Y, 0);
 
             for (var i = 0; i < jitterPattern.Length; i++)
             {
                 var jitter = jitterPattern[i];
 
-                var matrixB = Matrix4x4.CreateTranslation(new Vector3(jitter, 0) * (1f / font.FontSize)) * matrixA;
+                var matrixB = Matrix4x4.CreateTranslation(new Vector3(jitter, 0)) * matrixA;
                 textVertexProperties.Transform = matrixB;
                 commandList.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
 

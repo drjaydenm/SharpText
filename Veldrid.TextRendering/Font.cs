@@ -10,18 +10,19 @@ namespace Veldrid.TextRendering
     public class Font
     {
         public ushort UnitsPerEm => typeface.UnitsPerEm;
-        public int FontSize { get; private set; }
+        public int FontSizeInPoints { get; private set; }
+        public int FontSizeInPixels => (int)(FontSizeInPoints * 1.333333f);
 
         private readonly Typeface typeface;
         private readonly Dictionary<char, Glyph> loadedGlyphs;
         private readonly GlyphPathBuilder pathBuilder;
         private readonly GlyphTranslatorToVertices pathTranslator;
 
-        public Font(string filePath, int fontSize)
+        public Font(string filePath, int fontSizeInPoints)
         {
             SetupWoffDecompressorIfRequired();
 
-            FontSize = fontSize;
+            FontSizeInPoints = fontSizeInPoints;
             loadedGlyphs = new Dictionary<char, Glyph>();
 
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
@@ -49,15 +50,10 @@ namespace Veldrid.TextRendering
 
         public VertexPosition3Coord2[] GlyphToVertices(Glyph glyph)
         {
-            pathBuilder.BuildFromGlyph(glyph, FontSize);
+            pathBuilder.BuildFromGlyph(glyph, FontSizeInPoints);
 
             pathBuilder.ReadShapes(pathTranslator);
             var vertices = pathTranslator.ResultingVertices;
-
-            for (var i = 0; i < vertices.Length; i++)
-            {
-                vertices[i].Position *= 1f / FontSize;
-            }
 
             return vertices;
         }
