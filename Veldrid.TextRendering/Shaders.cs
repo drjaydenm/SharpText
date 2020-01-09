@@ -130,15 +130,23 @@ layout(location = 0) in vec2 _coord2;
 
 layout(location = 0) out vec4 outputColor;
 
+layout(constant_id = 0) const bool FlipSamplerUVs = false;
+
 void main() {
+    vec2 texCoord = _coord2;
+    if (FlipSamplerUVs)
+    {
+        texCoord.y *= -1;
+    }
+
     // Get samples for -2/3 and -1/3
-    vec2 valueL = texture(sampler2D(textureView, textureSampler), vec2(_coord2.x + dFdx(_coord2.x), _coord2.y)).yz * 255.0;
+    vec2 valueL = texture(sampler2D(textureView, textureSampler), vec2(texCoord.x + dFdx(texCoord.x), texCoord.y)).yz * 255.0;
     vec2 lowerL = mod(valueL, 16.0);
     vec2 upperL = (valueL - lowerL) / 16.0;
     vec2 alphaL = min(abs(upperL - lowerL), 2.0);
 
     // Get samples for 0, +1/3, and +2/3
-    vec3 valueR = texture(sampler2D(textureView, textureSampler), _coord2).xyz * 255.0;
+    vec3 valueR = texture(sampler2D(textureView, textureSampler), texCoord).xyz * 255.0;
     vec3 lowerR = mod(valueR, 16.0);
     vec3 upperR = (valueR - lowerR) / 16.0;
     vec3 alphaR = min(abs(upperR - lowerR), 2.0);

@@ -207,7 +207,8 @@ namespace Veldrid.TextRendering
             glyphTextureView = factory.CreateTextureView(glyphTexture);
             glyphTextureFramebuffer = factory.CreateFramebuffer(new FramebufferDescription(null, glyphTexture));
 
-            CompileShaders(factory);
+            var shaderOptions = GetCompileOptions();
+            CompileShaders(factory, shaderOptions);
 
             var textPropertiesLayout = factory.CreateResourceLayout(
                 new ResourceLayoutDescription(
@@ -252,7 +253,8 @@ namespace Veldrid.TextRendering
                 primitiveTopology: PrimitiveTopology.TriangleStrip,
                 shaderSet: new ShaderSetDescription(
                     vertexLayouts: new[] { VertexPosition2.LayoutDescription },
-                    shaders: textShaders),
+                    shaders: textShaders,
+                    specializations: shaderOptions.Specializations),
                 resourceLayouts: new ResourceLayout[] { textPropertiesLayout, textTextureLayout },
                 outputs: graphicsDevice.SwapchainFramebuffer.OutputDescription
             );
@@ -278,25 +280,35 @@ namespace Veldrid.TextRendering
                 scissorTestEnabled: false);
             pipelineDescription.ShaderSet = new ShaderSetDescription(
                 vertexLayouts: new[] { VertexPosition3Coord2.LayoutDescription },
-                shaders: glyphShaders);
+                shaders: glyphShaders,
+                specializations: shaderOptions.Specializations);
             glyphPipeline = factory.CreateGraphicsPipeline(pipelineDescription);
         }
 
-        private void CompileShaders(ResourceFactory factory)
+        private void CompileShaders(ResourceFactory factory, CrossCompileOptions options)
         {
             var glyphVertexShaderDesc = new ShaderDescription(
                 ShaderStages.Vertex, Encoding.UTF8.GetBytes(Shaders.GlyphTextVertex), "main");
             var glyphFragmentShaderDesc = new ShaderDescription(
                 ShaderStages.Fragment, Encoding.UTF8.GetBytes(Shaders.GlyphTextFragment), "main");
 
-            glyphShaders = factory.CreateFromSpirv(glyphVertexShaderDesc, glyphFragmentShaderDesc);
+            glyphShaders = factory.CreateFromSpirv(glyphVertexShaderDesc, glyphFragmentShaderDesc, options);
 
             var textVertexShaderDesc = new ShaderDescription(
                 ShaderStages.Vertex, Encoding.UTF8.GetBytes(Shaders.TextVertex), "main");
             var textFragmentShaderDesc = new ShaderDescription(
                 ShaderStages.Fragment, Encoding.UTF8.GetBytes(Shaders.TextFragment), "main");
 
-            textShaders = factory.CreateFromSpirv(textVertexShaderDesc, textFragmentShaderDesc);
+            textShaders = factory.CreateFromSpirv(textVertexShaderDesc, textFragmentShaderDesc, options);
+        }
+
+        private CrossCompileOptions GetCompileOptions()
+        {
+            var isOpenGl = graphicsDevice.BackendType == GraphicsBackend.OpenGL
+                || graphicsDevice.BackendType == GraphicsBackend.OpenGLES;
+
+            var specializations = new[] { new SpecializationConstant(0, !isOpenGl) }; //FlipSamplerUVs
+            return new CrossCompileOptions(isOpenGl && !graphicsDevice.IsDepthRangeZeroToOne, false, specializations);
         }
     }
 }
