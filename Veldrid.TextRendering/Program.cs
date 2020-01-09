@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Numerics;
 using Veldrid.Sdl2;
 using Veldrid.StartupUtilities;
@@ -87,7 +87,8 @@ namespace Veldrid.TextRendering
                 syncToVerticalBlank: false,
                 resourceBindingModel: ResourceBindingModel.Improved,
                 preferDepthRangeZeroToOne: true,
-                preferStandardClipSpaceYDirection: true
+                preferStandardClipSpaceYDirection: true,
+                swapchainSrgbFormat: true
             ));
         }
     }

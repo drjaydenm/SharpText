@@ -95,7 +95,7 @@ void main() {
 
     // Upper 4 bits: front faces
     // Lower 4 bits: back faces
-    outputColor = glyphColor * (gl_FrontFacing ? 64.0 / 255.0 : 16.0 / 255.0);
+    outputColor = glyphColor * (gl_FrontFacing ? 16.0 / 255.0 : 1.0 / 255.0);
 }
 ";
 

@@ -164,7 +164,7 @@ namespace Veldrid.TextRendering
             graphicsDevice.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
             graphicsDevice.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
 
-            var colorFormat = graphicsDevice.SwapchainFramebuffer.OutputDescription.ColorAttachments[0].Format;
+            var colorFormat = PixelFormat.B8_G8_R8_A8_UNorm;
             glyphTexture = factory.CreateTexture(TextureDescription.Texture2D(graphicsDevice.SwapchainFramebuffer.Width, graphicsDevice.SwapchainFramebuffer.Height, 1, 1, colorFormat, TextureUsage.RenderTarget | TextureUsage.Sampled));
             glyphTextureView = factory.CreateTextureView(glyphTexture);
             glyphTextureFramebuffer = factory.CreateFramebuffer(new FramebufferDescription(null, glyphTexture));
@@ -224,10 +224,10 @@ namespace Veldrid.TextRendering
             pipelineDescription.BlendState = new BlendStateDescription(RgbaFloat.White,
                 new BlendAttachmentDescription(
                     blendEnabled: true,
-                    sourceColorFactor: BlendFactor.SourceColor,
+                    sourceColorFactor: BlendFactor.One,
                     destinationColorFactor: BlendFactor.One,
                     colorFunction: BlendFunction.Add,
-                    sourceAlphaFactor: BlendFactor.SourceAlpha,
+                    sourceAlphaFactor: BlendFactor.One,
                     destinationAlphaFactor: BlendFactor.One,
                     alphaFunction: BlendFunction.Add));
             pipelineDescription.ResourceLayouts = new ResourceLayout[] { textPropertiesLayout };
@@ -235,8 +235,8 @@ namespace Veldrid.TextRendering
             pipelineDescription.RasterizerState = new RasterizerStateDescription(
                 cullMode: FaceCullMode.None,
                 fillMode: PolygonFillMode.Solid,
-                frontFace: FrontFace.CounterClockwise,
-                depthClipEnabled: false,
+                frontFace: FrontFace.Clockwise,
+                depthClipEnabled: true,
                 scissorTestEnabled: false);
             pipelineDescription.ShaderSet = new ShaderSetDescription(
                 vertexLayouts: new[] { VertexPosition3Coord2.LayoutDescription },
