@@ -187,11 +187,17 @@ namespace Veldrid.TextRendering
                         advanceX += glyphAdvanceX;
                     }
 
-                    updateRect.StartX = 0.01f;
-                    updateRect.StartY = 0.01f;
-                    updateRect.EndX = 0.5f;
-                    updateRect.EndY = 0.5f;
+                    updateRect.Include(drawable.Position.X * aspectWidth / 2f,
+                        drawable.Position.Y * aspectHeight / 2f);
+                    updateRect.Include((drawable.Position.X + advanceX) * aspectWidth / 2f,
+                        (drawable.Position.Y + Font.FontSizeInPixels) * aspectHeight / 2f);
                 }
+
+                const float paddingPixels = 1;
+                updateRect.Include(updateRect.StartX - (paddingPixels * aspectWidth / 2f),
+                    updateRect.StartY - (paddingPixels * aspectHeight / 2f));
+                updateRect.Include(updateRect.EndX + (paddingPixels * aspectWidth / 2f),
+                    updateRect.EndY + (paddingPixels * aspectHeight / 2f));
 
                 // 2nd pass, render everything to the framebuffer
                 DrawOutput(commandList, new RgbaFloat(0, 0, 0, 0), false, updateRect.ToVector4());

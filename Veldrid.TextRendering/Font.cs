@@ -8,7 +8,9 @@ using Typography.WebFont;
 
 namespace Veldrid.TextRendering
 {
-    // Contains measurement information for a piece of text
+    /// <summary>
+    /// Contains measurement information for a piece of text
+    /// </summary>
     public struct MeasurementInfo
     {
         public float Ascender;
@@ -26,6 +28,7 @@ namespace Veldrid.TextRendering
         public float FontSizeInPixels => FontSizeInPoints * POINTS_TO_PIXELS;
 
         private const float POINTS_TO_PIXELS = 4f / 3f;
+        private const float PIXELS_TO_POINTS = 3f / 4f;
 
         private readonly Typeface typeface;
         private readonly Dictionary<char, Glyph> loadedGlyphs;
@@ -41,7 +44,7 @@ namespace Veldrid.TextRendering
         {
             SetupWoffDecompressorIfRequired();
 
-            FontSizeInPoints = fontSizeInPixels * 0.75f;
+            FontSizeInPoints = fontSizeInPixels * PIXELS_TO_POINTS;
             loadedGlyphs = new Dictionary<char, Glyph>();
 
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))

@@ -30,8 +30,7 @@ namespace Veldrid.TextRendering
         {
             RgbaFloat.Black,
             RgbaFloat.Red,
-            RgbaFloat.Green,
-            RgbaFloat.CornflowerBlue
+            RgbaFloat.Blue
         };
 
         public static void Main(string[] args)
@@ -97,17 +96,17 @@ namespace Veldrid.TextRendering
             }
 
             var xAccumulated = 0f;
-            const float xInset = 50;
+            const float xInset = 10;
             const float lineSpacing = 5;
-            infoTextRenderer.DrawText("Debug Controls", new Vector2(xInset, xAccumulated += xInset), colors[0]);
+            infoTextRenderer.DrawText("Debug Controls:", new Vector2(xInset, xAccumulated += xInset), colors[0]);
             infoTextRenderer.DrawText("Up/Down = Increase/Decrease Font Size", new Vector2(xInset, xAccumulated += lineSpacing + infoFont.FontSizeInPixels), colors[0]);
             infoTextRenderer.DrawText("Right/Left = Increase/Decrease Letter Spacing", new Vector2(xInset, xAccumulated += lineSpacing + infoFont.FontSizeInPixels), colors[0]);
             infoTextRenderer.DrawText("Enter = Change Font", new Vector2(xInset, xAccumulated += lineSpacing + infoFont.FontSizeInPixels), colors[0]);
             infoTextRenderer.DrawText("Space = Change Color", new Vector2(xInset, xAccumulated += lineSpacing + infoFont.FontSizeInPixels), colors[0]);
 
-            //demoTextRenderer.DrawText("Sixty zippers were quickly picked from the woven jute bag.", new Vector2(xInset, xAccumulated += lineSpacing), colors[currentColorIndex], letterSpacing);
-            // TODO fix multiple color support
-            //demoTextRenderer.DrawText("asd", new Vector2(xInset, xAccumulated += lineSpacing + demoFont.FontSizeInPixels), colors[currentColorIndex], letterSpacing);
+            demoTextRenderer.DrawText("Sixty zippers were quickly picked from the woven jute bag.", new Vector2(xInset, xAccumulated += (lineSpacing * 5) + infoFont.FontSizeInPixels), colors[currentColorIndex], letterSpacing);
+            demoTextRenderer.DrawText("The quick brown fox jumps over the lazy dog", new Vector2(xInset, xAccumulated += lineSpacing + demoFont.FontSizeInPixels), colors[(currentColorIndex + 1) % colors.Length], letterSpacing);
+            demoTextRenderer.DrawText("How vexingly quick daft zebras jump!", new Vector2(xInset, xAccumulated += lineSpacing + demoFont.FontSizeInPixels), colors[(currentColorIndex + 2) % colors.Length], letterSpacing);
         }
 
         private static void Draw()
@@ -119,7 +118,7 @@ namespace Veldrid.TextRendering
             commandList.ClearDepthStencil(1f);
 
             infoTextRenderer.Draw(commandList);
-            //demoTextRenderer.Draw(commandList);
+            demoTextRenderer.Draw(commandList);
 
             commandList.End();
             graphicsDevice.SubmitCommands(commandList);
@@ -156,7 +155,8 @@ namespace Veldrid.TextRendering
 
         private static void UpdateFont()
         {
-            demoTextRenderer.UpdateFont(new Font(fonts[currentFontIndex], fontSize));
+            demoFont = new Font(fonts[currentFontIndex], fontSize);
+            demoTextRenderer.UpdateFont(demoFont);
         }
     }
 }
