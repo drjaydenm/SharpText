@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using ICSharpCode.SharpZipLib.Zip.Compression;
 using Typography.OpenFont;
+using Typography.TextLayout;
 using Typography.WebFont;
 
 namespace Veldrid.TextRendering
@@ -11,14 +12,16 @@ namespace Veldrid.TextRendering
     {
         public ushort UnitsPerEm => typeface.UnitsPerEm;
         public float FontSizeInPoints { get; private set; }
-        public float FontSizeInPixels => FontSizeInPoints * 1.333333f;
+        public float FontSizeInPixels => FontSizeInPoints * POINTS_TO_PIXELS;
+
+        private const float POINTS_TO_PIXELS = 4f / 3f;
 
         private readonly Typeface typeface;
         private readonly Dictionary<char, Glyph> loadedGlyphs;
         private readonly GlyphPathBuilder pathBuilder;
         private readonly GlyphTranslatorToVertices pathTranslator;
 
-        public Font(string filePath, int fontSizeInPoints)
+        public Font(string filePath, float fontSizeInPoints)
         {
             SetupWoffDecompressorIfRequired();
 
@@ -56,6 +59,24 @@ namespace Veldrid.TextRendering
             var vertices = pathTranslator.ResultingVertices;
 
             return vertices;
+        }
+
+        public float[] GetGlyhAdvanceInfoForString(string text)
+        {
+            var layout = new GlyphLayout();
+            layout.Typeface = typeface;
+
+            layout.LayoutAndMeasureString(text.ToCharArray(), 0, text.Length, FontSizeInPoints);
+
+            var glyphPositions = layout.ResultUnscaledGlyphPositions;
+            var advanceInfo = new float[glyphPositions.Count];
+            for (var i = 0; i < glyphPositions.Count; i++)
+            {
+                glyphPositions.GetGlyph(i, out var advanceW);
+                advanceInfo[i] = advanceW * (FontSizeInPixels / UnitsPerEm);
+            }
+
+            return advanceInfo;
         }
 
         private static void SetupWoffDecompressorIfRequired()

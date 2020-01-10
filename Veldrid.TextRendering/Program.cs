@@ -13,6 +13,8 @@ namespace Veldrid.TextRendering
         private static ResourceFactory factory;
         private static CommandList commandList;
         private static TextRenderer textRenderer;
+        private static float letterSpacing = 1;
+        private static float fontSize = 20;
 
         public static void Main(string[] args)
         {
@@ -35,7 +37,7 @@ namespace Veldrid.TextRendering
             factory = graphicsDevice.ResourceFactory;
             commandList = factory.CreateCommandList();
 
-            var font = new Font("Fonts/OpenSans-Regular.woff", 16);
+            var font = new Font("Fonts/OpenSans-Regular.woff", fontSize);
             textRenderer = new TextRenderer(graphicsDevice, font);
         }
 
@@ -45,8 +47,26 @@ namespace Veldrid.TextRendering
             {
                 window.Close();
             }
+            if (inputSnapshot.KeyEvents.Any(ke => ke.Key == Key.Up && ke.Down))
+            {
+                fontSize += 0.5f;
+                textRenderer.UpdateFont(new Font("Fonts/OpenSans-Regular.woff", fontSize));
+            }
+            if (inputSnapshot.KeyEvents.Any(ke => ke.Key == Key.Down && ke.Down))
+            {
+                fontSize -= 0.5f;
+                textRenderer.UpdateFont(new Font("Fonts/OpenSans-Regular.woff", fontSize));
+            }
+            if (inputSnapshot.KeyEvents.Any(ke => ke.Key == Key.Left && ke.Down))
+            {
+                letterSpacing -= 0.01f;
+            }
+            if (inputSnapshot.KeyEvents.Any(ke => ke.Key == Key.Right && ke.Down))
+            {
+                letterSpacing += 0.01f;
+            }
 
-            textRenderer.DrawText("testing 123", Vector2.Zero, RgbaFloat.DarkRed);
+            textRenderer.DrawText("Sixty zippers were quickly picked from the woven jute bag.", Vector2.Zero, RgbaFloat.DarkRed, letterSpacing);
         }
 
         private static void Draw()

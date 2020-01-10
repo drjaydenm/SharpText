@@ -42,9 +42,9 @@ namespace Veldrid.TextRendering
 
     public class TextRenderer
     {
-        private readonly GraphicsDevice graphicsDevice;
-        private readonly Font font;
+        public Font Font { get; private set; }
 
+        private readonly GraphicsDevice graphicsDevice;
         private DeviceBuffer glyphVertexBuffer;
         private DeviceBuffer quadVertexBuffer;
         private DeviceBuffer textVertexPropertiesBuffer;
@@ -75,14 +75,19 @@ namespace Veldrid.TextRendering
         public TextRenderer(GraphicsDevice graphicsDevice, Font font)
         {
             this.graphicsDevice = graphicsDevice;
-            this.font = font;
+            Font = font;
             
             textToDraw = new List<DrawableText>();
 
             Initialize();
         }
 
-        public void DrawText(string text, Vector2 coords, RgbaFloat color, float letterSpacing = 0.2f)
+        public void UpdateFont(Font font)
+        {
+            Font = font;
+        }
+
+        public void DrawText(string text, Vector2 coords, RgbaFloat color, float letterSpacing = 1f)
         {
             var drawable = new DrawableText
             {
@@ -93,14 +98,16 @@ namespace Veldrid.TextRendering
                 LetterSpacing = letterSpacing
             };
 
+            var advanceWidths = Font.GetGlyhAdvanceInfoForString(text);
+
             for (var i = 0; i < text.Length; i++)
             {
-                var glyph = font.GetGlyphByCharacter(text[i]);
+                var glyph = Font.GetGlyphByCharacter(text[i]);
 
                 drawable.Glyphs[i] = new DrawableGlyph
                 {
-                    Vertices = font.GlyphToVertices(glyph),
-                    AdvanceX = (glyph.MaxX - glyph.MinX) * (font.FontSizeInPixels / font.UnitsPerEm)
+                    Vertices = Font.GlyphToVertices(glyph),
+                    AdvanceX = advanceWidths[i]
                 };
             }
 
@@ -110,6 +117,8 @@ namespace Veldrid.TextRendering
         public void Draw(CommandList commandList)
         {
             var textGroupedByColor = textToDraw.GroupBy(t => t.Color);
+            var aspectWidth = 2f / graphicsDevice.SwapchainFramebuffer.Width;
+            var aspectHeight = 2f / graphicsDevice.SwapchainFramebuffer.Height;
 
             foreach (var colorGroup in textGroupedByColor)
             {
@@ -124,10 +133,13 @@ namespace Veldrid.TextRendering
                 {
                     for (var i = 0; i < drawable.Glyphs.Length; i++)
                     {
-                        var glyphAdvanceX = drawable.Glyphs[i].AdvanceX * (2f / graphicsDevice.SwapchainFramebuffer.Width);
-                        glyphAdvanceX += (font.FontSizeInPixels * drawable.LetterSpacing) * (2f / graphicsDevice.SwapchainFramebuffer.Width);
+                        var glyphAdvanceX = drawable.Glyphs[i].AdvanceX * aspectWidth;
+
+                        // Scale from 1 based to 0 based
+                        glyphAdvanceX += (drawable.LetterSpacing - 1) * Font.FontSizeInPixels * aspectWidth;
+
                         // TODO fix negative height
-                        DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, -(2f / graphicsDevice.SwapchainFramebuffer.Height) * font.FontSizeInPixels));
+                        DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, -aspectHeight * Font.FontSizeInPixels));
                         advanceX += glyphAdvanceX;
                     }
 
