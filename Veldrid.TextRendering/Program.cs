@@ -97,15 +97,17 @@ namespace Veldrid.TextRendering
             }
 
             var xAccumulated = 0f;
-            infoTextRenderer.DrawText("Debug Controls", new Vector2(5, xAccumulated += 5), colors[0]);
-            infoTextRenderer.DrawText("Up/Down = Increase/Decrease Font Size", new Vector2(5, xAccumulated += 5 + infoFont.FontSizeInPixels), colors[0]);
-            infoTextRenderer.DrawText("Right/Left = Increase/Decrease Letter Spacing", new Vector2(5, xAccumulated += 5 + infoFont.FontSizeInPixels), colors[0]);
-            infoTextRenderer.DrawText("Enter = Change Font", new Vector2(5, xAccumulated += 5 + infoFont.FontSizeInPixels), colors[0]);
-            infoTextRenderer.DrawText("Space = Change Color", new Vector2(5, xAccumulated += 5 + infoFont.FontSizeInPixels), colors[0]);
+            const float xInset = 50;
+            const float lineSpacing = 5;
+            infoTextRenderer.DrawText("Debug Controls", new Vector2(xInset, xAccumulated += xInset), colors[0]);
+            infoTextRenderer.DrawText("Up/Down = Increase/Decrease Font Size", new Vector2(xInset, xAccumulated += lineSpacing + infoFont.FontSizeInPixels), colors[0]);
+            infoTextRenderer.DrawText("Right/Left = Increase/Decrease Letter Spacing", new Vector2(xInset, xAccumulated += lineSpacing + infoFont.FontSizeInPixels), colors[0]);
+            infoTextRenderer.DrawText("Enter = Change Font", new Vector2(xInset, xAccumulated += lineSpacing + infoFont.FontSizeInPixels), colors[0]);
+            infoTextRenderer.DrawText("Space = Change Color", new Vector2(xInset, xAccumulated += lineSpacing + infoFont.FontSizeInPixels), colors[0]);
 
-            demoTextRenderer.DrawText("Sixty zippers were quickly picked from the woven jute bag.", new Vector2(5, xAccumulated += 5), colors[currentColorIndex], letterSpacing);
+            //demoTextRenderer.DrawText("Sixty zippers were quickly picked from the woven jute bag.", new Vector2(xInset, xAccumulated += lineSpacing), colors[currentColorIndex], letterSpacing);
             // TODO fix multiple color support
-            demoTextRenderer.DrawText("asd", new Vector2(5, xAccumulated += 5 + demoFont.FontSizeInPixels), colors[currentColorIndex], letterSpacing);
+            //demoTextRenderer.DrawText("asd", new Vector2(xInset, xAccumulated += lineSpacing + demoFont.FontSizeInPixels), colors[currentColorIndex], letterSpacing);
         }
 
         private static void Draw()
@@ -113,11 +115,11 @@ namespace Veldrid.TextRendering
             commandList.Begin();
             commandList.SetFramebuffer(graphicsDevice.SwapchainFramebuffer);
 
-            commandList.ClearColorTarget(0, RgbaFloat.White);
+            commandList.ClearColorTarget(0, RgbaFloat.CornflowerBlue);
             commandList.ClearDepthStencil(1f);
 
-            //infoTextRenderer.Draw(commandList);
-            demoTextRenderer.Draw(commandList);
+            infoTextRenderer.Draw(commandList);
+            //demoTextRenderer.Draw(commandList);
 
             commandList.End();
             graphicsDevice.SubmitCommands(commandList);

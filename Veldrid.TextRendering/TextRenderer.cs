@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -32,12 +33,42 @@ namespace Veldrid.TextRendering
         public Vector2 Position;
         public RgbaFloat Color;
         public float LetterSpacing;
+        public DrawableRect Rectangle;
     }
 
     public struct DrawableGlyph
     {
         public VertexPosition3Coord2[] Vertices;
         public float AdvanceX;
+    }
+
+    public struct DrawableRect
+    {
+        public float StartX;
+        public float StartY;
+        public float EndX;
+        public float EndY;
+        public float Width => EndX - StartX;
+        public float Height => EndY - StartY;
+
+        public void Reset()
+        {
+            StartX = StartY = float.MaxValue;
+            EndX = EndY = float.MinValue;
+        }
+
+        public void Include(float x, float y)
+        {
+            StartX = Math.Min(StartX, x);
+            StartY = Math.Min(StartY, y);
+            EndX = Math.Max(EndX, x);
+            EndY = Math.Max(EndY, y);
+        }
+
+        public Vector4 ToVector4()
+        {
+            return new Vector4(StartX, StartY, EndX, EndY);
+        }
     }
 
     public class TextRenderer
@@ -71,6 +102,8 @@ namespace Veldrid.TextRendering
             new Vector2( 9 / 12f,  3 / 12f)
         };
         private List<DrawableText> textToDraw;
+        private float aspectWidth;
+        private float aspectHeight;
 
         public TextRenderer(GraphicsDevice graphicsDevice, Font font)
         {
@@ -87,28 +120,39 @@ namespace Veldrid.TextRendering
             Font = font;
         }
 
-        public void DrawText(string text, Vector2 coords, RgbaFloat color, float letterSpacing = 1f)
+        public void DrawText(string text, Vector2 coordsInPixels, RgbaFloat color, float letterSpacing = 1f)
         {
             var drawable = new DrawableText
             {
                 Text = text,
                 Glyphs = new DrawableGlyph[text.Length],
-                Position = coords,
+                Position = coordsInPixels,
                 Color = color,
                 LetterSpacing = letterSpacing
             };
 
-            var advanceWidths = Font.GetGlyhAdvanceInfoForString(text);
+            var measurementInfo = Font.GetMeasurementInfoForString(text);
+            var accumulatedAdvanceWidths = 0f;
+            drawable.Rectangle.Reset();
 
             for (var i = 0; i < text.Length; i++)
             {
                 var glyph = Font.GetGlyphByCharacter(text[i]);
+                var vertices = Font.GlyphToVertices(glyph);
+
+                // Extend the text rectangle to contain this letter
+                for (var j = 0; j < vertices.Length; j++)
+                {
+                    vertices[j].Position.Y += measurementInfo.Descender;
+                    drawable.Rectangle.Include(vertices[j].Position.X + accumulatedAdvanceWidths, vertices[j].Position.Y);
+                }
 
                 drawable.Glyphs[i] = new DrawableGlyph
                 {
-                    Vertices = Font.GlyphToVertices(glyph),
-                    AdvanceX = advanceWidths[i]
+                    Vertices = vertices,
+                    AdvanceX = measurementInfo.AdvanceWidths[i]
                 };
+                accumulatedAdvanceWidths += measurementInfo.AdvanceWidths[i];
             }
 
             textToDraw.Add(drawable);
@@ -117,9 +161,8 @@ namespace Veldrid.TextRendering
         public void Draw(CommandList commandList)
         {
             var textGroupedByColor = textToDraw.GroupBy(t => t.Color);
-            var aspectWidth = 2f / graphicsDevice.SwapchainFramebuffer.Width;
-            var aspectHeight = 2f / graphicsDevice.SwapchainFramebuffer.Height;
 
+            // Render text sets by color
             foreach (var colorGroup in textGroupedByColor)
             {
                 commandList.SetPipeline(glyphPipeline);
@@ -128,37 +171,44 @@ namespace Veldrid.TextRendering
 
                 commandList.ClearColorTarget(0, new RgbaFloat(0, 0, 0, 0));
 
+                var updateRect = new DrawableRect();
+                updateRect.Reset();
                 foreach (var drawable in colorGroup)
                 {
-                    var drawablePosition = drawable.Position * new Vector2(aspectWidth, -aspectHeight);
                     var advanceX = 0f;
                     for (var i = 0; i < drawable.Glyphs.Length; i++)
                     {
-                        var glyphAdvanceX = drawable.Glyphs[i].AdvanceX * aspectWidth;
+                        var glyphAdvanceX = drawable.Glyphs[i].AdvanceX;
+                        // Transform letter spacing from 1 based to 0 based
+                        glyphAdvanceX += (drawable.LetterSpacing - 1) * Font.FontSizeInPixels;
 
-                        // Scale from 1 based to 0 based
-                        glyphAdvanceX += (drawable.LetterSpacing - 1) * Font.FontSizeInPixels * aspectWidth;
-
-                        DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, -aspectHeight * Font.FontSizeInPixels) + drawablePosition);
+                        var glyphCoordsInPixels = new Vector2(advanceX, 0) + drawable.Position;
+                        DrawGlyph(commandList, drawable.Glyphs[i].Vertices, glyphCoordsInPixels);
                         advanceX += glyphAdvanceX;
                     }
 
-                    textToDraw.Remove(drawable);
+                    updateRect.StartX = 0.01f;
+                    updateRect.StartY = 0.01f;
+                    updateRect.EndX = 0.5f;
+                    updateRect.EndY = 0.5f;
                 }
 
                 // 2nd pass, render everything to the framebuffer
-                DrawOutput(commandList, new RgbaFloat(0, 0, 0, 0), false);
+                DrawOutput(commandList, new RgbaFloat(0, 0, 0, 0), false, updateRect.ToVector4());
 
                 // We need to do a second pass if we would like a color other than black text
                 if (colorGroup.Key != new RgbaFloat(0, 0, 0, 1))
                 {
-                    DrawOutput(commandList, colorGroup.Key, true);
+                    DrawOutput(commandList, colorGroup.Key, true, updateRect.ToVector4());
                 }
             }
+
+            textToDraw.Clear();
         }
 
-        private void DrawGlyph(CommandList commandList, VertexPosition3Coord2[] glyphVertices, Vector2 coord)
+        private void DrawGlyph(CommandList commandList, VertexPosition3Coord2[] glyphVertices, Vector2 coordsInPixels)
         {
+            // Resize the vertex buffer if required
             var requiredBufferSize = VertexPosition3Coord2.SizeInBytes * (uint)glyphVertices.Length;
             if (glyphVertexBuffer.SizeInBytes < requiredBufferSize)
             {
@@ -170,16 +220,17 @@ namespace Veldrid.TextRendering
             commandList.UpdateBuffer(glyphVertexBuffer, 0, glyphVertices);
             commandList.SetVertexBuffer(0, glyphVertexBuffer);
 
-            var matrixA = Matrix4x4.CreateScale(2f / graphicsDevice.SwapchainFramebuffer.Width, 2f / graphicsDevice.SwapchainFramebuffer.Height, 1)
-                * Matrix4x4.CreateTranslation(-1, 1, 0)
-                * Matrix4x4.CreateTranslation(coord.X, coord.Y, 0);
+            var coordsInScreenSpace = coordsInPixels * new Vector2(aspectWidth, aspectHeight);
+            var textTransformMatrix = Matrix4x4.CreateScale(aspectWidth, -aspectHeight, 1)
+                * Matrix4x4.CreateTranslation(-1, 0, 0)
+                * Matrix4x4.CreateTranslation(coordsInScreenSpace.X, 1f - coordsInScreenSpace.Y, 0);
 
             for (var i = 0; i < jitterPattern.Length; i++)
             {
                 var jitter = jitterPattern[i];
 
-                var matrixB = Matrix4x4.CreateTranslation(new Vector3(jitter, 0)) * matrixA;
-                textVertexProperties.Transform = matrixB;
+                var glyphTransformMatrix = Matrix4x4.CreateTranslation(new Vector3(jitter, 0)) * textTransformMatrix;
+                textVertexProperties.Transform = glyphTransformMatrix;
                 commandList.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
 
                 if (i % 2 == 0)
@@ -192,8 +243,11 @@ namespace Veldrid.TextRendering
             }
         }
 
-        private void DrawOutput(CommandList commandList, RgbaFloat color, bool secondPass)
+        private void DrawOutput(CommandList commandList, RgbaFloat color, bool secondPass, Vector4 rect)
         {
+            textVertexProperties.Rectangle = rect;
+            commandList.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
+
             textFragmentProperties.GlyphColor = color;
             commandList.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
 
@@ -208,15 +262,17 @@ namespace Veldrid.TextRendering
         private void Initialize()
         {
             var factory = graphicsDevice.ResourceFactory;
+            aspectWidth = 2f / graphicsDevice.SwapchainFramebuffer.Width;
+            aspectHeight = 2f / graphicsDevice.SwapchainFramebuffer.Height;
 
             glyphVertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition3Coord2.SizeInBytes, BufferUsage.VertexBuffer));
             quadVertexBuffer = factory.CreateBuffer(new BufferDescription(VertexPosition2.SizeInBytes * 4, BufferUsage.VertexBuffer));
             quadVertices = new VertexPosition2[]
             {
-                new VertexPosition2(new Vector2(0, 0)),
-                new VertexPosition2(new Vector2(0, 1)),
-                new VertexPosition2(new Vector2(1, 0)),
-                new VertexPosition2(new Vector2(1, 1))
+                new VertexPosition2(new Vector2(-1, 1)),
+                new VertexPosition2(new Vector2(-1, -1)),
+                new VertexPosition2(new Vector2(1, 1)),
+                new VertexPosition2(new Vector2(1, -1)),
             };
             graphicsDevice.UpdateBuffer(quadVertexBuffer, 0, quadVertices);
 
@@ -225,7 +281,7 @@ namespace Veldrid.TextRendering
             textVertexProperties = new TextVertexProperties
             {
                 Transform = new Matrix4x4(),
-                Rectangle = new Vector4(-1, -1, 1, 1)
+                Rectangle = new Vector4(0, 0, 1, 1)
             };
             textFragmentProperties = new TextFragmentProperties
             {
@@ -345,7 +401,7 @@ namespace Veldrid.TextRendering
             var isOpenGl = graphicsDevice.BackendType == GraphicsBackend.OpenGL
                 || graphicsDevice.BackendType == GraphicsBackend.OpenGLES;
 
-            var specializations = new[] { new SpecializationConstant(0, !isOpenGl) }; //FlipSamplerUVs
+            var specializations = new[] { new SpecializationConstant(0, isOpenGl) }; //FlipSamplerUVs
             return new CrossCompileOptions(isOpenGl && !graphicsDevice.IsDepthRangeZeroToOne, false, specializations);
         }
     }

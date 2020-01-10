@@ -8,6 +8,17 @@ using Typography.WebFont;
 
 namespace Veldrid.TextRendering
 {
+    // Contains measurement information for a piece of text
+    public struct MeasurementInfo
+    {
+        public float Ascender;
+        public float Descender;
+        public float[] AdvanceWidths;
+    }
+
+    /// <summary>
+    /// Represents a font file and its associated glyphs and allows access to glyph vertices
+    /// </summary>
     public class Font
     {
         public ushort UnitsPerEm => typeface.UnitsPerEm;
@@ -21,11 +32,16 @@ namespace Veldrid.TextRendering
         private readonly GlyphPathBuilder pathBuilder;
         private readonly GlyphTranslatorToVertices pathTranslator;
 
-        public Font(string filePath, float fontSizeInPoints)
+        /// <summary>
+        /// Create a new font instance
+        /// </summary>
+        /// <param name="filePath">Path to the font file</param>
+        /// <param name="fontSizeInPixels">The desired font size in pixels</param>
+        public Font(string filePath, float fontSizeInPixels)
         {
             SetupWoffDecompressorIfRequired();
 
-            FontSizeInPoints = fontSizeInPoints;
+            FontSizeInPoints = fontSizeInPixels * 0.75f;
             loadedGlyphs = new Dictionary<char, Glyph>();
 
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
@@ -38,6 +54,11 @@ namespace Veldrid.TextRendering
             pathTranslator = new GlyphTranslatorToVertices();
         }
 
+        /// <summary>
+        /// Get a glyph from the font by character
+        /// </summary>
+        /// <param name="character">The character</param>
+        /// <returns>The glyph for the character</returns>
         public Glyph GetGlyphByCharacter(char character)
         {
             if (loadedGlyphs.ContainsKey(character))
@@ -51,6 +72,11 @@ namespace Veldrid.TextRendering
             return glyph;
         }
 
+        /// <summary>
+        /// Returns vertices for the specified glyph in pixel units
+        /// </summary>
+        /// <param name="glyph">The glyph</param>
+        /// <returns>Vertices in pixel units</returns>
         public VertexPosition3Coord2[] GlyphToVertices(Glyph glyph)
         {
             pathBuilder.BuildFromGlyph(glyph, FontSizeInPoints);
@@ -58,27 +84,47 @@ namespace Veldrid.TextRendering
             pathBuilder.ReadShapes(pathTranslator);
             var vertices = pathTranslator.ResultingVertices;
 
+            // Reorient the vertices so 0,0 is the top left corner
+            for (var i = 0; i < vertices.Length; i++)
+            {
+                vertices[i].Position.Y = FontSizeInPixels - vertices[i].Position.Y;
+            }
+
             return vertices;
         }
 
-        public float[] GetGlyhAdvanceInfoForString(string text)
+        /// <summary>
+        /// Return glyph advance distances along the X axis to layout text
+        /// </summary>
+        /// <param name="text">Text to layout</param>
+        /// <returns>Advance distances for each glyph in pixel units</returns>
+        public MeasurementInfo GetMeasurementInfoForString(string text)
         {
             var layout = new GlyphLayout();
             layout.Typeface = typeface;
 
-            layout.LayoutAndMeasureString(text.ToCharArray(), 0, text.Length, FontSizeInPoints);
+            var measure = layout.LayoutAndMeasureString(text.ToCharArray(), 0, text.Length, FontSizeInPoints);
 
             var glyphPositions = layout.ResultUnscaledGlyphPositions;
-            var advanceInfo = new float[glyphPositions.Count];
+            var advanceWidths = new float[glyphPositions.Count];
             for (var i = 0; i < glyphPositions.Count; i++)
             {
                 glyphPositions.GetGlyph(i, out var advanceW);
-                advanceInfo[i] = advanceW * (FontSizeInPixels / UnitsPerEm);
+                advanceWidths[i] = advanceW * (FontSizeInPixels / UnitsPerEm);
             }
 
-            return advanceInfo;
+            return new MeasurementInfo
+            {
+                Ascender = measure.AscendingInPx,
+                Descender = measure.DescendingInPx,
+                AdvanceWidths = advanceWidths
+            };
         }
 
+        /// <summary>
+        /// The initial WOFF decompressor is null and throws an exception
+        /// So we use SharpZipLib to inflate the file
+        /// </summary>
         private static void SetupWoffDecompressorIfRequired()
         {
             if (WoffDefaultZlibDecompressFunc.DecompressHandler != null)

@@ -72,7 +72,7 @@ layout(location = 0) out vec2 _coord2;
 
 void main() {
     _coord2 = coord2;
-    gl_Position = matrix4 * vec4(position3.xy, 1.0, 1.0);
+    gl_Position = matrix4 * vec4(position3.xy, 0.0, 1.0);
 }
 ";
 
@@ -112,7 +112,7 @@ layout(location = 0) out vec2 _coord2;
 
 void main() {
     _coord2 = mix(rect.xy, rect.zw, position2 * 0.5 + 0.5);
-    gl_Position = vec4(_coord2 * 2.0 - 1.0, 0.0, 1.0);
+    gl_Position = vec4((_coord2 * 2.0 - 1.0) * vec2(1, -1), 0.0, 1.0);
 }
 ";
 
