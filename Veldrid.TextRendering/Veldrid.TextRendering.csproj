@@ -17,6 +17,12 @@
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Fonts\LeArchitect.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Fonts\neon2.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Fonts\OpenSans-Regular.woff">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
