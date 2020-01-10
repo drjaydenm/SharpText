@@ -31,6 +31,7 @@ namespace Veldrid.TextRendering
         public DrawableGlyph[] Glyphs;
         public Vector2 Position;
         public RgbaFloat Color;
+        public float LetterSpacing;
     }
 
     public struct DrawableGlyph
@@ -61,8 +62,7 @@ namespace Veldrid.TextRendering
         private Framebuffer glyphTextureFramebuffer;
         private Shader[] glyphShaders;
         private Shader[] textShaders;
-        private Vector2[] jitterPattern = new[]
-        {
+        private Vector2[] jitterPattern = {
             new Vector2(-1 / 12f, -5 / 12f),
             new Vector2( 1 / 12f,  1 / 12f),
             new Vector2( 3 / 12f, -1 / 12f),
@@ -82,14 +82,15 @@ namespace Veldrid.TextRendering
             Initialize();
         }
 
-        public void DrawText(string text, Vector2 coords, RgbaFloat color)
+        public void DrawText(string text, Vector2 coords, RgbaFloat color, float letterSpacing = 0.2f)
         {
             var drawable = new DrawableText
             {
                 Text = text,
                 Glyphs = new DrawableGlyph[text.Length],
                 Position = coords,
-                Color = color
+                Color = color,
+                LetterSpacing = letterSpacing
             };
 
             for (var i = 0; i < text.Length; i++)
@@ -99,8 +100,7 @@ namespace Veldrid.TextRendering
                 drawable.Glyphs[i] = new DrawableGlyph
                 {
                     Vertices = font.GlyphToVertices(glyph),
-                    // TODO calculate this properly
-                    AdvanceX = (glyph.Bounds.XMax - glyph.Bounds.XMin) * (1f / font.FontSizeInPixels * 0.55f)
+                    AdvanceX = (glyph.MaxX - glyph.MinX) * (font.FontSizeInPixels / font.UnitsPerEm)
                 };
             }
 
@@ -124,9 +124,11 @@ namespace Veldrid.TextRendering
                 {
                     for (var i = 0; i < drawable.Glyphs.Length; i++)
                     {
+                        var glyphAdvanceX = drawable.Glyphs[i].AdvanceX * (2f / graphicsDevice.SwapchainFramebuffer.Width);
+                        glyphAdvanceX += (font.FontSizeInPixels * drawable.LetterSpacing) * (2f / graphicsDevice.SwapchainFramebuffer.Width);
                         // TODO fix negative height
-                        DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, -(2f / graphicsDevice.SwapchainFramebuffer.Height) * 20));
-                        advanceX += drawable.Glyphs[i].AdvanceX * (1f / graphicsDevice.SwapchainFramebuffer.Width);
+                        DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, -(2f / graphicsDevice.SwapchainFramebuffer.Height) * font.FontSizeInPixels));
+                        advanceX += glyphAdvanceX;
                     }
 
                     textToDraw.Remove(drawable);

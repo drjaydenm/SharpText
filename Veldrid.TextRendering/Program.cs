@@ -46,7 +46,7 @@ namespace Veldrid.TextRendering
                 window.Close();
             }
 
-            textRenderer.DrawText("testing 123", Vector2.Zero);
+            textRenderer.DrawText("testing 123", Vector2.Zero, RgbaFloat.DarkRed);
         }
 
         private static void Draw()

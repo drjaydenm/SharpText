@@ -10,8 +10,8 @@ namespace Veldrid.TextRendering
     public class Font
     {
         public ushort UnitsPerEm => typeface.UnitsPerEm;
-        public int FontSizeInPoints { get; private set; }
-        public int FontSizeInPixels => (int)(FontSizeInPoints * 1.333333f);
+        public float FontSizeInPoints { get; private set; }
+        public float FontSizeInPixels => FontSizeInPoints * 1.333333f;
 
         private readonly Typeface typeface;
         private readonly Dictionary<char, Glyph> loadedGlyphs;
