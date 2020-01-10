@@ -128,9 +128,10 @@ namespace Veldrid.TextRendering
 
                 commandList.ClearColorTarget(0, new RgbaFloat(0, 0, 0, 0));
 
-                var advanceX = 0f;
                 foreach (var drawable in colorGroup)
                 {
+                    var drawablePosition = drawable.Position * new Vector2(aspectWidth, -aspectHeight);
+                    var advanceX = 0f;
                     for (var i = 0; i < drawable.Glyphs.Length; i++)
                     {
                         var glyphAdvanceX = drawable.Glyphs[i].AdvanceX * aspectWidth;
@@ -138,8 +139,7 @@ namespace Veldrid.TextRendering
                         // Scale from 1 based to 0 based
                         glyphAdvanceX += (drawable.LetterSpacing - 1) * Font.FontSizeInPixels * aspectWidth;
 
-                        // TODO fix negative height
-                        DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, -aspectHeight * Font.FontSizeInPixels));
+                        DrawGlyph(commandList, drawable.Glyphs[i].Vertices, new Vector2(advanceX, -aspectHeight * Font.FontSizeInPixels) + drawablePosition);
                         advanceX += glyphAdvanceX;
                     }
 

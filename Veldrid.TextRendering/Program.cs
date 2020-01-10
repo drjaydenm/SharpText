@@ -12,7 +12,10 @@ namespace Veldrid.TextRendering
         private static GraphicsDevice graphicsDevice;
         private static ResourceFactory factory;
         private static CommandList commandList;
-        private static TextRenderer textRenderer;
+        private static Font infoFont;
+        private static Font demoFont;
+        private static TextRenderer infoTextRenderer;
+        private static TextRenderer demoTextRenderer;
         private static float letterSpacing = 1;
         private static float fontSize = 20;
         private static int currentFontIndex = 0;
@@ -52,8 +55,11 @@ namespace Veldrid.TextRendering
             factory = graphicsDevice.ResourceFactory;
             commandList = factory.CreateCommandList();
 
-            var font = new Font(fonts[currentFontIndex], fontSize);
-            textRenderer = new TextRenderer(graphicsDevice, font);
+            infoFont = new Font(fonts[0], 13);
+            infoTextRenderer = new TextRenderer(graphicsDevice, infoFont);
+
+            demoFont = new Font(fonts[currentFontIndex], fontSize);
+            demoTextRenderer = new TextRenderer(graphicsDevice, demoFont);
         }
 
         private static void Update()
@@ -90,7 +96,16 @@ namespace Veldrid.TextRendering
                 currentColorIndex = (currentColorIndex + 1) % colors.Length;
             }
 
-            textRenderer.DrawText("Sixty zippers were quickly picked from the woven jute bag.", Vector2.Zero, colors[currentColorIndex], letterSpacing);
+            var xAccumulated = 0f;
+            infoTextRenderer.DrawText("Debug Controls", new Vector2(5, xAccumulated += 5), colors[0]);
+            infoTextRenderer.DrawText("Up/Down = Increase/Decrease Font Size", new Vector2(5, xAccumulated += 5 + infoFont.FontSizeInPixels), colors[0]);
+            infoTextRenderer.DrawText("Right/Left = Increase/Decrease Letter Spacing", new Vector2(5, xAccumulated += 5 + infoFont.FontSizeInPixels), colors[0]);
+            infoTextRenderer.DrawText("Enter = Change Font", new Vector2(5, xAccumulated += 5 + infoFont.FontSizeInPixels), colors[0]);
+            infoTextRenderer.DrawText("Space = Change Color", new Vector2(5, xAccumulated += 5 + infoFont.FontSizeInPixels), colors[0]);
+
+            demoTextRenderer.DrawText("Sixty zippers were quickly picked from the woven jute bag.", new Vector2(5, xAccumulated += 5), colors[currentColorIndex], letterSpacing);
+            // TODO fix multiple color support
+            demoTextRenderer.DrawText("asd", new Vector2(5, xAccumulated += 5 + demoFont.FontSizeInPixels), colors[currentColorIndex], letterSpacing);
         }
 
         private static void Draw()
@@ -101,7 +116,8 @@ namespace Veldrid.TextRendering
             commandList.ClearColorTarget(0, RgbaFloat.White);
             commandList.ClearDepthStencil(1f);
 
-            textRenderer.Draw(commandList);
+            //infoTextRenderer.Draw(commandList);
+            demoTextRenderer.Draw(commandList);
 
             commandList.End();
             graphicsDevice.SubmitCommands(commandList);
@@ -138,7 +154,7 @@ namespace Veldrid.TextRendering
 
         private static void UpdateFont()
         {
-            textRenderer.UpdateFont(new Font(fonts[currentFontIndex], fontSize));
+            demoTextRenderer.UpdateFont(new Font(fonts[currentFontIndex], fontSize));
         }
     }
 }
