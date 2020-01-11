@@ -88,9 +88,12 @@ namespace Veldrid.TextRendering
         private TextFragmentProperties textFragmentProperties;
         private ResourceSet textPropertiesSet;
         private ResourceSet textTextureSet;
+        private ResourceSet dummyTextureSet;
         private Texture glyphTexture;
         private TextureView glyphTextureView;
         private Framebuffer glyphTextureFramebuffer;
+        private Texture dummyTexture;
+        private TextureView dummyTextureView;
         private Shader[] glyphShaders;
         private Shader[] textShaders;
         private Vector2[] jitterPattern = {
@@ -260,6 +263,8 @@ namespace Veldrid.TextRendering
             commandList.SetPipeline(secondPass ? outputColorPipeline : outputPipeline);
             commandList.SetFramebuffer(graphicsDevice.MainSwapchain.Framebuffer);
             commandList.SetGraphicsResourceSet(0, textPropertiesSet);
+            // HACK workaround issue with texture view caching for shader resources
+            commandList.SetGraphicsResourceSet(1, dummyTextureSet);
             commandList.SetGraphicsResourceSet(1, textTextureSet);
             commandList.SetVertexBuffer(0, quadVertexBuffer);
             commandList.Draw((uint)quadVertices.Length);
@@ -301,6 +306,9 @@ namespace Veldrid.TextRendering
             glyphTexture = factory.CreateTexture(TextureDescription.Texture2D(graphicsDevice.SwapchainFramebuffer.Width, graphicsDevice.SwapchainFramebuffer.Height, 1, 1, colorFormat, TextureUsage.RenderTarget | TextureUsage.Sampled));
             glyphTextureView = factory.CreateTextureView(glyphTexture);
             glyphTextureFramebuffer = factory.CreateFramebuffer(new FramebufferDescription(null, glyphTexture));
+            // HACK workaround issue with texture view caching for shader resources
+            dummyTexture = factory.CreateTexture(TextureDescription.Texture2D(1, 1, 1, 1, colorFormat, TextureUsage.Sampled));
+            dummyTextureView = factory.CreateTextureView(dummyTexture);
 
             var shaderOptions = GetCompileOptions();
             CompileShaders(factory, shaderOptions);
@@ -323,6 +331,11 @@ namespace Veldrid.TextRendering
             textTextureSet = factory.CreateResourceSet(new ResourceSetDescription(
                 textTextureLayout,
                 glyphTextureView,
+                graphicsDevice.LinearSampler));
+            // HACK workaround issue with texture view caching for shader resources
+            dummyTextureSet = factory.CreateResourceSet(new ResourceSetDescription(
+                textTextureLayout,
+                dummyTextureView,
                 graphicsDevice.LinearSampler));
 
             var additiveBlendState = new BlendStateDescription(RgbaFloat.White,
