@@ -29,7 +29,7 @@ namespace Veldrid.TextRendering
         private static RgbaFloat[] colors =
         {
             RgbaFloat.Black,
-            RgbaFloat.Red,
+            RgbaFloat.White,
             RgbaFloat.Blue
         };
 
@@ -149,7 +149,7 @@ namespace Veldrid.TextRendering
                 resourceBindingModel: ResourceBindingModel.Improved,
                 preferDepthRangeZeroToOne: true,
                 preferStandardClipSpaceYDirection: true,
-                swapchainSrgbFormat: true
+                swapchainSrgbFormat: false
             ));
         }
 

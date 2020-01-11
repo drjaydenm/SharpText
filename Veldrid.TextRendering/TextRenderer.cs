@@ -105,6 +105,7 @@ namespace Veldrid.TextRendering
             new Vector2( 9 / 12f,  3 / 12f)
         };
         private List<DrawableText> textToDraw;
+        private Dictionary<char, DrawableGlyph> cachedGlyphs;
         private float aspectWidth;
         private float aspectHeight;
 
@@ -114,6 +115,7 @@ namespace Veldrid.TextRendering
             Font = font;
             
             textToDraw = new List<DrawableText>();
+            cachedGlyphs = new Dictionary<char, DrawableGlyph>();
 
             Initialize();
         }
@@ -121,6 +123,7 @@ namespace Veldrid.TextRendering
         public void UpdateFont(Font font)
         {
             Font = font;
+            cachedGlyphs.Clear();
         }
 
         public void DrawText(string text, Vector2 coordsInPixels, RgbaFloat color, float letterSpacing = 1f)
@@ -140,6 +143,13 @@ namespace Veldrid.TextRendering
 
             for (var i = 0; i < text.Length; i++)
             {
+                if (cachedGlyphs.ContainsKey(text[i]))
+                {
+                    drawable.Glyphs[i] = cachedGlyphs[text[i]];
+                    accumulatedAdvanceWidths += measurementInfo.AdvanceWidths[i];
+                    continue;
+                }
+
                 var glyph = Font.GetGlyphByCharacter(text[i]);
                 var vertices = Font.GlyphToVertices(glyph);
 
@@ -150,11 +160,14 @@ namespace Veldrid.TextRendering
                     drawable.Rectangle.Include(vertices[j].Position.X + accumulatedAdvanceWidths, vertices[j].Position.Y);
                 }
 
-                drawable.Glyphs[i] = new DrawableGlyph
+                var drawableGlyph = new DrawableGlyph
                 {
                     Vertices = vertices,
                     AdvanceX = measurementInfo.AdvanceWidths[i]
                 };
+                drawable.Glyphs[i] = drawableGlyph;
+                cachedGlyphs.Add(text[i], drawableGlyph);
+
                 accumulatedAdvanceWidths += measurementInfo.AdvanceWidths[i];
             }
 
