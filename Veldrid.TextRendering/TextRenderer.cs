@@ -339,11 +339,11 @@ namespace Veldrid.TextRendering
                 blendState: new BlendStateDescription(RgbaFloat.White,
                     new BlendAttachmentDescription(
                         blendEnabled: true,
-                        sourceColorFactor: BlendFactor.SourceAlpha,
-                        destinationColorFactor: BlendFactor.Zero,
+                        sourceColorFactor: BlendFactor.Zero,
+                        destinationColorFactor: BlendFactor.SourceColor,
                         colorFunction: BlendFunction.Add,
-                        sourceAlphaFactor: BlendFactor.SourceAlpha,
-                        destinationAlphaFactor: BlendFactor.Zero,
+                        sourceAlphaFactor: BlendFactor.Zero,
+                        destinationAlphaFactor: BlendFactor.SourceAlpha,
                         alphaFunction: BlendFunction.Add)),
                 depthStencilStateDescription: new DepthStencilStateDescription(
                     depthTestEnabled: true,
