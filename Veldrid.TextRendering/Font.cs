@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using ICSharpCode.SharpZipLib.Zip.Compression;
 using Typography.OpenFont;
+using Typography.OpenFont.Extensions;
 using Typography.TextLayout;
 using Typography.WebFont;
 
@@ -15,6 +16,7 @@ namespace Veldrid.TextRendering
     {
         public float Ascender;
         public float Descender;
+        public float LineHeight;
         public float[] AdvanceWidths;
     }
 
@@ -87,12 +89,6 @@ namespace Veldrid.TextRendering
             pathBuilder.ReadShapes(pathTranslator);
             var vertices = pathTranslator.ResultingVertices;
 
-            // Reorient the vertices so 0,0 is the top left corner
-            for (var i = 0; i < vertices.Length; i++)
-            {
-                vertices[i].Position.Y = FontSizeInPixels - vertices[i].Position.Y;
-            }
-
             return vertices;
         }
 
@@ -107,6 +103,7 @@ namespace Veldrid.TextRendering
             layout.Typeface = typeface;
 
             var measure = layout.LayoutAndMeasureString(text.ToCharArray(), 0, text.Length, FontSizeInPoints);
+            var lineHeight = typeface.CalculateLineSpacing(LineSpacingChoice.TypoMetric) * (FontSizeInPixels / UnitsPerEm);
 
             var glyphPositions = layout.ResultUnscaledGlyphPositions;
             var advanceWidths = new float[glyphPositions.Count];
@@ -120,7 +117,8 @@ namespace Veldrid.TextRendering
             {
                 Ascender = measure.AscendingInPx,
                 Descender = measure.DescendingInPx,
-                AdvanceWidths = advanceWidths
+                AdvanceWidths = advanceWidths,
+                LineHeight = lineHeight
             };
         }
 

@@ -156,7 +156,7 @@ namespace Veldrid.TextRendering
                 // Extend the text rectangle to contain this letter
                 for (var j = 0; j < vertices.Length; j++)
                 {
-                    vertices[j].Position.Y += measurementInfo.Descender;
+                    vertices[j].Position.Y -= measurementInfo.Ascender;
                     drawable.Rectangle.Include(vertices[j].Position.X + accumulatedAdvanceWidths, vertices[j].Position.Y);
                 }
 
@@ -243,7 +243,7 @@ namespace Veldrid.TextRendering
             commandList.SetVertexBuffer(0, glyphVertexBuffer);
 
             var coordsInScreenSpace = coordsInPixels * new Vector2(aspectWidth, aspectHeight);
-            var textTransformMatrix = Matrix4x4.CreateScale(aspectWidth, -aspectHeight, 1)
+            var textTransformMatrix = Matrix4x4.CreateScale(aspectWidth, aspectHeight, 1)
                 * Matrix4x4.CreateTranslation(-1, 0, 0)
                 * Matrix4x4.CreateTranslation(coordsInScreenSpace.X, 1f - coordsInScreenSpace.Y, 0);
 

@@ -22,7 +22,9 @@ namespace Veldrid.TextRendering
         private static string[] fonts =
         {
             "Fonts/OpenSans-Regular.woff",
+            "Fonts/AmaticSC-Regular.ttf",
             "Fonts/LeArchitect.ttf",
+            "Fonts/Sacramento-Regular.ttf",
             "Fonts/neon2.ttf"
         };
         private static int currentColorIndex = 0;
