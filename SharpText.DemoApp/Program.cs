@@ -52,6 +52,8 @@ namespace SharpText.DemoApp
 				Update();
 				Draw();
 			}
+
+			Dispose();
 		}
 
 		private static void Initialize()
@@ -135,6 +137,16 @@ namespace SharpText.DemoApp
 			graphicsDevice.WaitForIdle();
 
 			graphicsDevice.SwapBuffers();
+		}
+
+		private static void Dispose()
+		{
+			graphicsDevice.WaitForIdle();
+
+			infoTextRenderer.Dispose();
+			demoTextRenderer.Dispose();
+
+			commandList.Dispose();
 		}
 
 		private static Sdl2Window CreateWindow()

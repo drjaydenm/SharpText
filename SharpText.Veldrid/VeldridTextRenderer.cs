@@ -204,6 +204,34 @@ namespace SharpText.Veldrid
             textToDraw.Clear();
         }
 
+        public void Dispose()
+        {
+            outputPipeline.Dispose();
+            outputColorPipeline.Dispose();
+            glyphPipeline.Dispose();
+
+            textPropertiesSet.Dispose();
+            textTextureSet.Dispose();
+            dummyTextureSet.Dispose();
+
+            foreach (var shader in glyphShaders)
+                shader.Dispose();
+
+            foreach (var shader in textShaders)
+                shader.Dispose();
+
+            glyphTexture.Dispose();
+            glyphTextureView.Dispose();
+            glyphTextureFramebuffer.Dispose();
+            dummyTexture.Dispose();
+            dummyTextureView.Dispose();
+
+            glyphVertexBuffer.Dispose();
+            quadVertexBuffer.Dispose();
+            textVertexPropertiesBuffer.Dispose();
+            textFragmentPropertiesBuffer.Dispose();
+        }
+
         private void DrawGlyph(CommandList commandList, VertexPosition3Coord2[] glyphVertices, Vector2 coordsInPixels)
         {
             // Resize the vertex buffer if required

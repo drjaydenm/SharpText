@@ -1,11 +1,12 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 
 namespace SharpText.Core
 {
 	/// <summary>
 	/// Common interface for text renderers
 	/// </summary>
-	public interface ITextRenderer
+	public interface ITextRenderer : IDisposable
 	{
 		/// <summary>
 		/// Draw a string of text in the specified location and color
