@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Veldrid.Sdl2;
 using Veldrid.StartupUtilities;
 
@@ -132,6 +133,11 @@ namespace Veldrid.TextRendering
 
         private static Sdl2Window CreateWindow()
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                WindowUtils.SetProcessDpiAwareness();
+            }
+
             var windowCI = new WindowCreateInfo
             {
                 X = 100,
