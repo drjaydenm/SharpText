@@ -1,4 +1,4 @@
-namespace SharpText
+namespace SharpText.Veldrid
 {
     public static class Shaders
     {

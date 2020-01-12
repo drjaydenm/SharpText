@@ -1,7 +1,6 @@
 ﻿using System.Numerics;
-using Veldrid;
 
-namespace SharpText
+namespace SharpText.Core
 {
     public struct VertexPosition2
     {
@@ -18,9 +17,5 @@ namespace SharpText
         {
             return $"<{Position.X}, {Position.Y}>";
         }
-
-        public static VertexLayoutDescription LayoutDescription = new VertexLayoutDescription(
-            new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2)
-        );
     }
 }

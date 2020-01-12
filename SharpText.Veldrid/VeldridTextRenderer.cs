@@ -1,4 +1,4 @@
-using System;
+using SharpText.Core;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -8,7 +8,7 @@ using System.Text;
 using Veldrid;
 using Veldrid.SPIRV;
 
-namespace SharpText
+namespace SharpText.Veldrid
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct TextVertexProperties
@@ -24,7 +24,7 @@ namespace SharpText
         private float _padding1;
         private float _padding2;
         private float _padding3;
-        public RgbaFloat GlyphColor;
+        public Color GlyphColor;
     }
 
     public struct DrawableText
@@ -32,7 +32,7 @@ namespace SharpText
         public string Text;
         public DrawableGlyph[] Glyphs;
         public Vector2 Position;
-        public RgbaFloat Color;
+        public Color Color;
         public float LetterSpacing;
         public BoundingRectangle Rectangle;
     }
@@ -43,11 +43,12 @@ namespace SharpText
         public float AdvanceX;
     }
 
-    public class TextRenderer
+    public class VeldridTextRenderer : ITextRenderer
     {
         public Font Font { get; private set; }
 
         private readonly GraphicsDevice graphicsDevice;
+        private readonly CommandList commandList;
         private DeviceBuffer glyphVertexBuffer;
         private DeviceBuffer quadVertexBuffer;
         private DeviceBuffer textVertexPropertiesBuffer;
@@ -81,9 +82,10 @@ namespace SharpText
         private float aspectWidth;
         private float aspectHeight;
 
-        public TextRenderer(GraphicsDevice graphicsDevice, Font font)
+        public VeldridTextRenderer(GraphicsDevice graphicsDevice, CommandList commandList, Font font)
         {
             this.graphicsDevice = graphicsDevice;
+            this.commandList = commandList;
             Font = font;
             
             textToDraw = new List<DrawableText>();
@@ -98,7 +100,7 @@ namespace SharpText
             cachedGlyphs.Clear();
         }
 
-        public void DrawText(string text, Vector2 coordsInPixels, RgbaFloat color, float letterSpacing = 1f)
+        public void DrawText(string text, Vector2 coordsInPixels, Color color, float letterSpacing)
         {
             var drawable = new DrawableText
             {
@@ -145,7 +147,7 @@ namespace SharpText
             textToDraw.Add(drawable);
         }
 
-        public void Draw(CommandList commandList)
+        public void Draw()
         {
             var textGroupedByColor = textToDraw.GroupBy(t => t.Color);
 
@@ -187,10 +189,10 @@ namespace SharpText
                     updateRect.EndY + (paddingPixels * aspectHeight / 2f));
 
                 // 2nd pass, render everything to the framebuffer
-                DrawOutput(commandList, new RgbaFloat(0, 0, 0, 0), false, updateRect.ToVector4());
+                DrawOutput(commandList, new Color(0, 0, 0, 0), false, updateRect.ToVector4());
 
                 // We need to do a second pass if we would like a color other than black text
-                if (colorGroup.Key != new RgbaFloat(0, 0, 0, 1))
+                if (colorGroup.Key != new Color(0, 0, 0, 1))
                 {
                     DrawOutput(commandList, colorGroup.Key, true, updateRect.ToVector4());
                 }
@@ -228,7 +230,7 @@ namespace SharpText
 
                 if (i % 2 == 0)
                 {
-                    textFragmentProperties.GlyphColor = new RgbaFloat(i == 0 ? 1 : 0, i == 2 ? 1 : 0, i == 4 ? 1 : 0, 0);
+                    textFragmentProperties.GlyphColor = new Color(i == 0 ? 1 : 0, i == 2 ? 1 : 0, i == 4 ? 1 : 0, 0);
                     commandList.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
                 }
 
@@ -236,7 +238,7 @@ namespace SharpText
             }
         }
 
-        private void DrawOutput(CommandList commandList, RgbaFloat color, bool secondPass, Vector4 rect)
+        private void DrawOutput(CommandList commandList, Color color, bool secondPass, Vector4 rect)
         {
             textVertexProperties.Rectangle = rect;
             commandList.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
@@ -281,7 +283,7 @@ namespace SharpText
             textFragmentProperties = new TextFragmentProperties
             {
                 ThicknessAndMode = 0, // TODO support other modes
-                GlyphColor = new RgbaFloat(0, 0.5f, 1, 1)
+                GlyphColor = new Color(0, 0.5f, 1, 1)
             };
             graphicsDevice.UpdateBuffer(textVertexPropertiesBuffer, 0, textVertexProperties);
             graphicsDevice.UpdateBuffer(textFragmentPropertiesBuffer, 0, textFragmentProperties);
@@ -354,7 +356,11 @@ namespace SharpText
                     scissorTestEnabled: false),
                 primitiveTopology: PrimitiveTopology.TriangleStrip,
                 shaderSet: new ShaderSetDescription(
-                    vertexLayouts: new[] { VertexPosition2.LayoutDescription },
+                    vertexLayouts: new[]
+                    {
+                        new VertexLayoutDescription(
+                            new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))
+                    },
                     shaders: textShaders,
                     specializations: shaderOptions.Specializations),
                 resourceLayouts: new ResourceLayout[] { textPropertiesLayout, textTextureLayout },
@@ -376,7 +382,12 @@ namespace SharpText
                 depthClipEnabled: true,
                 scissorTestEnabled: false);
             pipelineDescription.ShaderSet = new ShaderSetDescription(
-                vertexLayouts: new[] { VertexPosition3Coord2.LayoutDescription },
+                vertexLayouts: new[]
+                {
+                    new VertexLayoutDescription(
+                        new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float3),
+                        new VertexElementDescription("Coord", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))
+                },
                 shaders: glyphShaders,
                 specializations: shaderOptions.Specializations);
             glyphPipeline = factory.CreateGraphicsPipeline(pipelineDescription);

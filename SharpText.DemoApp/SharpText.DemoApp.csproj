@@ -5,17 +5,14 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Veldrid.StartupUtilities" Version="4.7.0" />
-    <PackageReference Include="Veldrid.SPIRV" Version="1.0.11" />
-    <PackageReference Include="SharpZipLib" Version="1.2.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SharpText.Veldrid\SharpText.Veldrid.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Update="Fonts\AmaticSC-Regular.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -33,6 +30,5 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <Import Project="..\Typography\Typography.GlyphLayout\Typography.GlyphLayout.projitems" Label="Shared" Condition="Exists('..\Typography\Typography.GlyphLayout\Typography.GlyphLayout.projitems')" />
-  <Import Project="..\Typography\Typography.OpenFont\Typography.OpenFont.projitems" Label="Shared" Condition="Exists('..\Typography\Typography.OpenFont\Typography.OpenFont.projitems')" />
+
 </Project>

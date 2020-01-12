@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Numerics;
 
-namespace SharpText
+namespace SharpText.Core
 {
     public struct BoundingRectangle
     {

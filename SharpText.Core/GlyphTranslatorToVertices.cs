@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Typography.OpenFont;
 
-namespace SharpText
+namespace SharpText.Core
 {
     public enum TriangleKind
     {

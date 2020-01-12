@@ -1,7 +1,7 @@
 ﻿using Typography.OpenFont;
 using Typography.OpenFont.CFF;
 
-namespace SharpText
+namespace SharpText.Core
 {
     public class GlyphPathBuilder : GlyphPathBuilderBase
     {
