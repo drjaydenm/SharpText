@@ -17,3 +17,25 @@ At the moment, the project structure looks like this:
 * SharpText.Core - contains shared logic and platform independant code
 * SharpText.Veldrid - implements an ITextRenderer for the Veldrid graphics backend
 * SharpText.DemoApp - a simple demo app to show how to use this library (take a look at Program.cs to get started)
+
+## Examples
+
+The Demo App Using [Open Sans](https://fonts.google.com/specimen/Open+Sans)
+
+![Demo App Screenshot](https://raw.githubusercontent.com/drjaydenm/SharpText/master/Images/demo_app.png)
+
+Using [Amatic SC](https://fonts.google.com/specimen/Amatic+SC)
+
+![Font](https://raw.githubusercontent.com/drjaydenm/SharpText/master/Images/font_1.png)
+
+Using [LeArchitect](https://www.dafont.com/learchitect.font?l[]=10&l[]=1)
+
+![Font](https://raw.githubusercontent.com/drjaydenm/SharpText/master/Images/font_2.png)
+
+Using [Sacramento](https://fonts.google.com/specimen/Sacramento)
+
+![Font](https://raw.githubusercontent.com/drjaydenm/SharpText/master/Images/font_3.png)
+
+Using [Neon2](https://www.dafont.com/neon-lights.font?l[]=10&l[]=1)
+
+![Font](https://raw.githubusercontent.com/drjaydenm/SharpText/master/Images/font_4.png)
