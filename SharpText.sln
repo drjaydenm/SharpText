@@ -8,9 +8,16 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Typography.OpenFont", "Typo
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Typography.GlyphLayout", "Typography\Typography.GlyphLayout\Typography.GlyphLayout.shproj", "{D8861CF8-C506-472B-8A57-632BD6CA6496}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpText.DemoApp", "SharpText.DemoApp\SharpText.DemoApp.csproj", "{126E04BB-BF92-4A30-9CDA-AAC532C02EF1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpText.DemoApp", "SharpText.DemoApp\SharpText.DemoApp.csproj", "{126E04BB-BF92-4A30-9CDA-AAC532C02EF1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpText.Veldrid", "SharpText.Veldrid\SharpText.Veldrid.csproj", "{7889E106-83FC-4A61-BD8A-DC1567B3F9DB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpText.Veldrid", "SharpText.Veldrid\SharpText.Veldrid.csproj", "{7889E106-83FC-4A61-BD8A-DC1567B3F9DB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{17CC3FD4-29D3-47E3-A50D-4404CD8684DB}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
