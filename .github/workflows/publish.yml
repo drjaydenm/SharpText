@@ -1,0 +1,29 @@
+name: NuGet Publish
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Update Submodules
+      uses: srt32/git-actions@v0.0.3
+      with:
+        args: "git submodule update --init"
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.100
+    - name: Build with dotnet
+      run: dotnet build --configuration Release
+    - name: Package & NuGet Upload
+      uses: rohith/publish-nuget@v1
+      with:
+        project_dir: SharpText.Core
+        nuget_key: ${{secrets.NUGET_API_KEY}}
