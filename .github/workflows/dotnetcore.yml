@@ -23,4 +23,4 @@ jobs:
       uses: rohith/publish-nuget@v1
       with:
         project_dir: SharpText.Core
-        nuget_key: ${{NUGET_API_KEY}}
+        nuget_key: ${{secrets.NUGET_API_KEY}}
