@@ -33,42 +33,13 @@ namespace Veldrid.TextRendering
         public Vector2 Position;
         public RgbaFloat Color;
         public float LetterSpacing;
-        public DrawableRect Rectangle;
+        public BoundingRectangle Rectangle;
     }
 
     public struct DrawableGlyph
     {
         public VertexPosition3Coord2[] Vertices;
         public float AdvanceX;
-    }
-
-    public struct DrawableRect
-    {
-        public float StartX;
-        public float StartY;
-        public float EndX;
-        public float EndY;
-        public float Width => EndX - StartX;
-        public float Height => EndY - StartY;
-
-        public void Reset()
-        {
-            StartX = StartY = float.MaxValue;
-            EndX = EndY = float.MinValue;
-        }
-
-        public void Include(float x, float y)
-        {
-            StartX = Math.Min(StartX, x);
-            StartY = Math.Min(StartY, y);
-            EndX = Math.Max(EndX, x);
-            EndY = Math.Max(EndY, y);
-        }
-
-        public Vector4 ToVector4()
-        {
-            return new Vector4(StartX, StartY, EndX, EndY);
-        }
     }
 
     public class TextRenderer
@@ -140,6 +111,7 @@ namespace Veldrid.TextRendering
             var measurementInfo = Font.GetMeasurementInfoForString(text);
             var accumulatedAdvanceWidths = 0f;
             drawable.Rectangle.Reset();
+            var stringVertices = Font.GetVerticesForString(text);
 
             for (var i = 0; i < text.Length; i++)
             {
@@ -150,13 +122,11 @@ namespace Veldrid.TextRendering
                     continue;
                 }
 
-                var glyph = Font.GetGlyphByCharacter(text[i]);
-                var vertices = Font.GlyphToVertices(glyph);
+                var vertices = stringVertices.Vertices[i];
 
                 // Extend the text rectangle to contain this letter
                 for (var j = 0; j < vertices.Length; j++)
                 {
-                    vertices[j].Position.Y -= measurementInfo.Ascender;
                     drawable.Rectangle.Include(vertices[j].Position.X + accumulatedAdvanceWidths, vertices[j].Position.Y);
                 }
 
@@ -187,7 +157,7 @@ namespace Veldrid.TextRendering
 
                 commandList.ClearColorTarget(0, new RgbaFloat(0, 0, 0, 0));
 
-                var updateRect = new DrawableRect();
+                var updateRect = new BoundingRectangle();
                 updateRect.Reset();
                 foreach (var drawable in colorGroup)
                 {

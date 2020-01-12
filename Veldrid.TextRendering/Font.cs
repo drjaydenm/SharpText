@@ -21,6 +21,15 @@ namespace Veldrid.TextRendering
     }
 
     /// <summary>
+    /// Contains vertices and bounds information for a piece of text
+    /// </summary>
+    public struct StringVertices
+    {
+        public VertexPosition3Coord2[][] Vertices;
+        public BoundingRectangle Bounds;
+    }
+
+    /// <summary>
     /// Represents a font file and its associated glyphs and allows access to glyph vertices
     /// </summary>
     public class Font
@@ -60,36 +69,60 @@ namespace Veldrid.TextRendering
         }
 
         /// <summary>
-        /// Get a glyph from the font by character
+        /// Returns vertices for the specified character in pixel units
         /// </summary>
         /// <param name="character">The character</param>
-        /// <returns>The glyph for the character</returns>
-        public Glyph GetGlyphByCharacter(char character)
-        {
-            if (loadedGlyphs.ContainsKey(character))
-                return loadedGlyphs[character];
-            
-            var glyphIndex = typeface.CmapTable.LookupIndex(character);
-            var glyph = typeface.GetGlyphByIndex(glyphIndex);
-            
-            loadedGlyphs.Add(character, glyph);
-
-            return glyph;
-        }
-
-        /// <summary>
-        /// Returns vertices for the specified glyph in pixel units
-        /// </summary>
-        /// <param name="glyph">The glyph</param>
         /// <returns>Vertices in pixel units</returns>
-        public VertexPosition3Coord2[] GlyphToVertices(Glyph glyph)
+        public VertexPosition3Coord2[] GetVerticesForCharacter(char character)
         {
+            var glyph = GetGlyphByCharacter(character);
+
             pathBuilder.BuildFromGlyph(glyph, FontSizeInPoints);
 
             pathBuilder.ReadShapes(pathTranslator);
             var vertices = pathTranslator.ResultingVertices;
 
             return vertices;
+        }
+
+        /// <summary>
+        /// Returns vertices and bounds info for the given text
+        /// </summary>
+        /// <param name="text">The text</param>
+        /// <returns>Vertices and bounds info</returns>
+        public StringVertices GetVerticesForString(string text)
+        {
+            var stringData = new StringVertices();
+            stringData.Vertices = new VertexPosition3Coord2[text.Length][];
+
+            for (var i = 0; i < text.Length; i++)
+            {
+                var vertices = GetVerticesForCharacter(text[i]);
+                for (var j = 0; j < vertices.Length; j++)
+                {
+                    stringData.Bounds.Include(vertices[j].Position.X, vertices[j].Position.Y);
+                }
+
+                stringData.Vertices[i] = vertices;
+            }
+
+            // Move up/down the glyphs to align them to Y=0
+            if (stringData.Bounds.StartY != 0)
+            {
+                var offset = stringData.Bounds.StartY;
+                for (var i = 0; i < text.Length; i++)
+                {
+                    for (var j = 0; j < stringData.Vertices[i].Length; j++)
+                    {
+                        stringData.Vertices[i][j].Position.Y -= offset + FontSizeInPixels;
+                    }
+                }
+
+                stringData.Bounds.StartY -= offset;
+                stringData.Bounds.EndY -= offset;
+            }
+
+            return stringData;
         }
 
         /// <summary>
@@ -120,6 +153,24 @@ namespace Veldrid.TextRendering
                 AdvanceWidths = advanceWidths,
                 LineHeight = lineHeight
             };
+        }
+
+        /// <summary>
+        /// Get a glyph from the font by character
+        /// </summary>
+        /// <param name="character">The character</param>
+        /// <returns>The glyph for the character</returns>
+        private Glyph GetGlyphByCharacter(char character)
+        {
+            if (loadedGlyphs.ContainsKey(character))
+                return loadedGlyphs[character];
+
+            var glyphIndex = typeface.CmapTable.LookupIndex(character);
+            var glyph = typeface.GetGlyphByIndex(glyphIndex);
+
+            loadedGlyphs.Add(character, glyph);
+
+            return glyph;
         }
 
         /// <summary>
