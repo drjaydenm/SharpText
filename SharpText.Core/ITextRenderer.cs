@@ -22,6 +22,11 @@ namespace SharpText.Core
 		void Draw();
 
 		/// <summary>
+		/// Clear accumulated strings of text
+		/// </summary>
+		void Update();
+
+		/// <summary>
 		/// Update the font in use by the renderer. WARNING, this will clear out any caches and could be an expensive call
 		/// </summary>
 		/// <param name="font">The new font</param>

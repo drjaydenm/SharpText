@@ -197,7 +197,10 @@ namespace SharpText.Veldrid
                     DrawOutput(commandList, colorGroup.Key, true, updateRect.ToVector4());
                 }
             }
+        }
 
+        public void Update()
+        {
             textToDraw.Clear();
         }
 

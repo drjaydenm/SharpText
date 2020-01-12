@@ -101,6 +101,9 @@ namespace SharpText.DemoApp
 				currentColorIndex = (currentColorIndex + 1) % colors.Length;
 			}
 
+			infoTextRenderer.Update();
+			demoTextRenderer.Update();
+
 			var xAccumulated = 0f;
 			const float xInset = 10;
 			const float lineSpacing = 5;
