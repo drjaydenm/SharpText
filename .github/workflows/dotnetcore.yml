@@ -9,6 +9,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: git Actions
+      uses: srt32/git-actions@v0.0.3
+      with:
+        args: "git status"
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
