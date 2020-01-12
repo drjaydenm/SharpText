@@ -1,10 +1,11 @@
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using Veldrid;
 using Veldrid.Sdl2;
 using Veldrid.StartupUtilities;
 
-namespace Veldrid.TextRendering
+namespace SharpText
 {
     public static class Program
     {
@@ -144,7 +145,7 @@ namespace Veldrid.TextRendering
                 Y = 100,
                 WindowWidth = 800,
                 WindowHeight = 600,
-                WindowTitle = "Veldrid.TextRendering"
+                WindowTitle = "SharpText"
             };
             return VeldridStartup.CreateWindow(ref windowCI);
         }

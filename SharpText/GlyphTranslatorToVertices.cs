@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Typography.OpenFont;
 
-namespace Veldrid.TextRendering
+namespace SharpText
 {
     public enum TriangleKind
     {

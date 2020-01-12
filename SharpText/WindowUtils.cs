@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Veldrid.TextRendering
+namespace SharpText
 {
 	public static class WindowUtils
 	{

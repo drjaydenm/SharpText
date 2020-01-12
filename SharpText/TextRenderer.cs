@@ -5,9 +5,10 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Veldrid;
 using Veldrid.SPIRV;
 
-namespace Veldrid.TextRendering
+namespace SharpText
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct TextVertexProperties

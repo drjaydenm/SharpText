@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
+using Veldrid;
 
-namespace Veldrid.TextRendering
+namespace SharpText
 {
     public struct VertexPosition3Coord2
     {

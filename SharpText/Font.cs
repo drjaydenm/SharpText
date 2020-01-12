@@ -7,7 +7,7 @@ using Typography.OpenFont.Extensions;
 using Typography.TextLayout;
 using Typography.WebFont;
 
-namespace Veldrid.TextRendering
+namespace SharpText
 {
     /// <summary>
     /// Contains measurement information for a piece of text

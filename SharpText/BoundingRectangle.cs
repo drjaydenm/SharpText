@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Numerics;
 
-namespace Veldrid.TextRendering
+namespace SharpText
 {
     public struct BoundingRectangle
     {

@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Veldrid.TextRendering
+namespace SharpText
 {
 	public static class KnownGlyphVertices
 	{

@@ -1,7 +1,7 @@
 ﻿using Typography.OpenFont;
 using Typography.OpenFont.CFF;
 
-namespace Veldrid.TextRendering
+namespace SharpText
 {
     public class GlyphPathBuilder : GlyphPathBuilderBase
     {
