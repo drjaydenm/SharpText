@@ -34,9 +34,9 @@ namespace Veldrid.TextRendering
     /// </summary>
     public class Font
     {
-        public ushort UnitsPerEm => typeface.UnitsPerEm;
         public float FontSizeInPoints { get; private set; }
         public float FontSizeInPixels => FontSizeInPoints * POINTS_TO_PIXELS;
+        public string Name => typeface.Name;
 
         private const float POINTS_TO_PIXELS = 4f / 3f;
         private const float PIXELS_TO_POINTS = 3f / 4f;
@@ -45,6 +45,8 @@ namespace Veldrid.TextRendering
         private readonly Dictionary<char, Glyph> loadedGlyphs;
         private readonly GlyphPathBuilder pathBuilder;
         private readonly GlyphTranslatorToVertices pathTranslator;
+        
+        private float TotalHeight => (typeface.Bounds.YMax - typeface.Bounds.YMin) * (FontSizeInPixels / typeface.UnitsPerEm);
 
         /// <summary>
         /// Create a new font instance
@@ -107,19 +109,24 @@ namespace Veldrid.TextRendering
             }
 
             // Move up/down the glyphs to align them to Y=0
-            if (stringData.Bounds.StartY != 0)
+            if (typeface.Bounds.YMin != 0)
             {
-                var offset = stringData.Bounds.StartY;
+                var scale = FontSizeInPixels / TotalHeight;
+                var offset = typeface.Bounds.YMin * (FontSizeInPixels / typeface.UnitsPerEm);
                 for (var i = 0; i < text.Length; i++)
                 {
                     for (var j = 0; j < stringData.Vertices[i].Length; j++)
                     {
+                        stringData.Vertices[i][j].Position.X *= scale;
+                        stringData.Vertices[i][j].Position.Y *= scale;
                         stringData.Vertices[i][j].Position.Y -= offset + FontSizeInPixels;
                     }
                 }
 
                 stringData.Bounds.StartY -= offset;
                 stringData.Bounds.EndY -= offset;
+                stringData.Bounds.StartY *= scale;
+                stringData.Bounds.EndY *= scale;
             }
 
             return stringData;
@@ -136,14 +143,15 @@ namespace Veldrid.TextRendering
             layout.Typeface = typeface;
 
             var measure = layout.LayoutAndMeasureString(text.ToCharArray(), 0, text.Length, FontSizeInPoints);
-            var lineHeight = typeface.CalculateLineSpacing(LineSpacingChoice.TypoMetric) * (FontSizeInPixels / UnitsPerEm);
+            var lineHeight = typeface.CalculateLineSpacing(LineSpacingChoice.TypoMetric) * (FontSizeInPixels / typeface.UnitsPerEm);
 
             var glyphPositions = layout.ResultUnscaledGlyphPositions;
             var advanceWidths = new float[glyphPositions.Count];
+            var scale = FontSizeInPixels / TotalHeight;
             for (var i = 0; i < glyphPositions.Count; i++)
             {
                 glyphPositions.GetGlyph(i, out var advanceW);
-                advanceWidths[i] = advanceW * (FontSizeInPixels / UnitsPerEm);
+                advanceWidths[i] = advanceW * (FontSizeInPixels / typeface.UnitsPerEm) * scale;
             }
 
             return new MeasurementInfo
