@@ -22,14 +22,19 @@ jobs:
         dotnet-version: 3.1.100
     - name: Build with dotnet
       run: dotnet build --configuration Release
-    - name: Package & NuGet Upload SharpText.Core
-      uses: rohith/publish-nuget@v1
-      with:
-        project_dir: SharpText.Core
-        nuget_key: ${{secrets.NUGET_API_KEY}}
-    - name: Package & NuGet Upload SharpText.Veldrid
-      uses: rohith/publish-nuget@v1
-      with:
-        project_dir: SharpText.Veldrid
-        nuget_key: ${{secrets.NUGET_API_KEY}}
-        tag_format: v*-2
+    - name: Package Projects
+      shell: bash
+      run: |
+        dotnet pack -c Release SharpText.Core/SharpText.Core.csproj -o .
+        dotnet pack -c Release SharpText.Veldrid/SharpText.Veldrid.csproj -o .
+    - name: Publish Projects
+      shell: bash
+      run: |
+        dotnet nuget push *.nupkg -s https://api.nuget.org/v3/index.json -k ${{secrets.NUGET_API_KEY}}
+    - name: Tag Repo
+      shell: bash
+      run: |
+        version=$(grep -o '<Version>[^<]*' Directory.Build.props | sed 's/<Version>//')
+        echo 'Detected version is $version'
+        git tag $version
+        git push origin $version
