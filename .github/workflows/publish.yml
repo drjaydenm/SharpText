@@ -32,3 +32,4 @@ jobs:
       with:
         project_dir: SharpText.Veldrid
         nuget_key: ${{secrets.NUGET_API_KEY}}
+        tag_format: v*-2
