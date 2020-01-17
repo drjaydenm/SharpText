@@ -6,24 +6,29 @@ on:
       - master
 
 jobs:
-  build:
+  publish:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Update Submodules
-      uses: srt32/git-actions@v0.0.3
-      with:
-        args: "git submodule update --init"
+      shell: bash
+      run: |
+        git submodule update --init
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.100
     - name: Build with dotnet
       run: dotnet build --configuration Release
-    - name: Package & NuGet Upload
+    - name: Package & NuGet Upload SharpText.Core
       uses: rohith/publish-nuget@v1
       with:
         project_dir: SharpText.Core
+        nuget_key: ${{secrets.NUGET_API_KEY}}
+    - name: Package & NuGet Upload SharpText.Veldrid
+      uses: rohith/publish-nuget@v1
+      with:
+        project_dir: SharpText.Veldrid
         nuget_key: ${{secrets.NUGET_API_KEY}}
