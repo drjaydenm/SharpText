@@ -12,5 +12,10 @@
   <ItemGroup>
     <ProjectReference Include="..\SharpText.Core\SharpText.Core.csproj" />
   </ItemGroup>
+  
+  <PropertyGroup>
+    <Description>This is the Veldrid rendering backend for SharpText; a GPU accelerated text renderer implemented in C#</Description>
+    <PackageTags>SharpText Text Font Veldrid Rendering GPU Accelerated DirectX OpenGL Vulkan Metal Game</PackageTags>
+  </PropertyGroup>
 
 </Project>

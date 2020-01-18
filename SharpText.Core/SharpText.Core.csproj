@@ -18,4 +18,10 @@
   
   <Import Project="..\Typography\Typography.GlyphLayout\Typography.GlyphLayout.projitems" Label="Shared" Condition="Exists('..\Typography\Typography.GlyphLayout\Typography.GlyphLayout.projitems')" />
   <Import Project="..\Typography\Typography.OpenFont\Typography.OpenFont.projitems" Label="Shared" Condition="Exists('..\Typography\Typography.OpenFont\Typography.OpenFont.projitems')" />
+
+  <PropertyGroup>
+    <Description>SharpText is a GPU accelerated text renderer implemented in C#</Description>
+    <PackageTags>SharpText Text Font Rendering GPU Accelerated DirectX OpenGL Vulkan Metal Game</PackageTags>
+  </PropertyGroup>
+  
 </Project>
