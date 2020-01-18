@@ -30,7 +30,8 @@ jobs:
     - name: Publish Projects
       shell: bash
       run: |
-        dotnet nuget push *.nupkg -s https://api.nuget.org/v3/index.json -k ${{secrets.NUGET_API_KEY}}
+        dotnet nuget push SharpText.Core.nupkg -s https://api.nuget.org/v3/index.json -k ${{secrets.NUGET_API_KEY}}
+        dotnet nuget push SharpText.Veldrid.nupkg -s https://api.nuget.org/v3/index.json -k ${{secrets.NUGET_API_KEY}}
     - name: Tag Repo
       shell: bash
       run: |
