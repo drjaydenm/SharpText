@@ -71,6 +71,25 @@ namespace SharpText.Core
         }
 
         /// <summary>
+        /// Create a new font instance
+        /// </summary>
+        /// <param name="fontStream">Stream to the font data</param>
+        /// <param name="fontSizeInPixels">The desired font size in pixels</param>
+        public Font(Stream fontStream, float fontSizeInPixels)
+        {
+            SetupWoffDecompressorIfRequired();
+
+            FontSizeInPoints = fontSizeInPixels * PIXELS_TO_POINTS;
+            loadedGlyphs = new Dictionary<char, Glyph>();
+
+            var reader = new OpenFontReader();
+            typeface = reader.Read(fontStream);
+
+            pathBuilder = new GlyphPathBuilder(typeface);
+            pathTranslator = new GlyphTranslatorToVertices();
+        }
+
+        /// <summary>
         /// Returns vertices for the specified character in pixel units
         /// </summary>
         /// <param name="character">The character</param>
