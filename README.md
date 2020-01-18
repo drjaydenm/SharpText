@@ -20,6 +20,12 @@ At the moment, the project structure looks like this:
 
 ## Getting Started
 
+Before we get to the code, pull in the NuGet package for your rendering backend. Here we will use Veldrid as our backend.
+
+```bash
+dotnet add package SharpText.Veldrid
+```
+
 First you will need to create a Font object for the font and size you wish to use.
 
 ```csharp

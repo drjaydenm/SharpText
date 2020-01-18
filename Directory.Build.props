@@ -1,13 +1,11 @@
 <Project>
   <PropertyGroup>
-    <Version>0.1.7</Version>
+    <Version>0.1.8</Version>
     <Authors>Jayden Meyer</Authors>
     
     <PackageLicenseUrl>https://raw.githubusercontent.com/drjaydenm/SharpText/master/LICENSE</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Copyright>Copyright (c) Jayden Meyer. All rights reserved.</Copyright>
     <RepositoryUrl>https://github.com/drjaydenm/SharpText</RepositoryUrl>
-    
-    <IncludeSymbols>true</IncludeSymbols>
   </PropertyGroup>
 </Project>

@@ -25,8 +25,8 @@ jobs:
     - name: Package Projects
       shell: bash
       run: |
-        dotnet pack -c Release SharpText.Core/SharpText.Core.csproj -o .
-        dotnet pack -c Release SharpText.Veldrid/SharpText.Veldrid.csproj -o .
+        dotnet pack -c Release --include-symbols SharpText.Core/SharpText.Core.csproj -o .
+        dotnet pack -c Release --include-symbols SharpText.Veldrid/SharpText.Veldrid.csproj -o .
     - name: Publish Projects
       shell: bash
       run: |
