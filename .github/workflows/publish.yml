@@ -35,7 +35,7 @@ jobs:
     - name: Tag Repo
       shell: bash
       run: |
-        version=$(grep -o '<Version>[^<]*' Directory.Build.props | sed 's/<Version>//')
+        version=v$(grep -o '<Version>[^<]*' Directory.Build.props | sed 's/<Version>//')
         echo 'Detected version is $version'
         git tag $version
         git push origin $version
