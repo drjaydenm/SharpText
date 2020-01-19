@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <Version>0.1.9</Version>
+    <Version>0.1.10</Version>
     <Authors>Jayden Meyer</Authors>
     
     <PackageLicenseUrl>https://raw.githubusercontent.com/drjaydenm/SharpText/master/LICENSE</PackageLicenseUrl>
