@@ -32,5 +32,10 @@ namespace SharpText.Core
 		/// </summary>
 		/// <param name="font">The new font</param>
 		void UpdateFont(Font font);
+
+		/// <summary>
+		/// Call this method when the swapchain has changed size, e.g. when the window is resized or screen orientation changes
+		/// </summary>
+		void ResizeToSwapchain();
 	}
 }

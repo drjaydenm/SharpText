@@ -52,6 +52,12 @@ Now just call the Draw method as part of your normal draw loop while you have an
 textRenderer.Draw();
 ```
 
+If the window can also be resized or the screen orientation changed, you will probably also want to notify the TextRenderer when this happens so it can resize its internal render target.
+
+```csharp
+textRenderer.ResizeToSwapchain();
+```
+
 ## Examples
 
 The Demo App Using [Open Sans](https://fonts.google.com/specimen/Open+Sans)

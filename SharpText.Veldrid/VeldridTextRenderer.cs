@@ -59,6 +59,7 @@ namespace SharpText.Veldrid
         private VertexPosition2[] quadVertices;
         private TextVertexProperties textVertexProperties;
         private TextFragmentProperties textFragmentProperties;
+        private ResourceLayout textTextureLayout;
         private ResourceSet textPropertiesSet;
         private ResourceSet textTextureSet;
         private ResourceSet dummyTextureSet;
@@ -232,6 +233,29 @@ namespace SharpText.Veldrid
             textFragmentPropertiesBuffer.Dispose();
         }
 
+        public void ResizeToSwapchain()
+        {
+            aspectWidth = 2f / graphicsDevice.SwapchainFramebuffer.Width;
+            aspectHeight = 2f / graphicsDevice.SwapchainFramebuffer.Height;
+
+            var factory = graphicsDevice.ResourceFactory;
+            var colorFormat = PixelFormat.B8_G8_R8_A8_UNorm;
+
+            glyphTexture?.Dispose();
+            glyphTextureView?.Dispose();
+            glyphTextureFramebuffer?.Dispose();
+            textTextureSet.Dispose();
+
+            glyphTexture = factory.CreateTexture(TextureDescription.Texture2D(graphicsDevice.SwapchainFramebuffer.Width, graphicsDevice.SwapchainFramebuffer.Height, 1, 1, colorFormat, TextureUsage.RenderTarget | TextureUsage.Sampled));
+            glyphTextureView = factory.CreateTextureView(glyphTexture);
+            glyphTextureFramebuffer = factory.CreateFramebuffer(new FramebufferDescription(null, glyphTexture));
+
+            textTextureSet = factory.CreateResourceSet(new ResourceSetDescription(
+                textTextureLayout,
+                glyphTextureView,
+                graphicsDevice.LinearSampler));
+        }
+
         private void DrawGlyph(CommandList commandList, VertexPosition3Coord2[] glyphVertices, Vector2 coordsInPixels)
         {
             // Resize the vertex buffer if required
@@ -335,7 +359,7 @@ namespace SharpText.Veldrid
                     new ResourceLayoutElementDescription("TextVertexPropertiesBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex),
                     new ResourceLayoutElementDescription("TextFragmentPropertiesBuffer", ResourceKind.UniformBuffer, ShaderStages.Fragment)));
 
-            var textTextureLayout = factory.CreateResourceLayout(
+            textTextureLayout = factory.CreateResourceLayout(
                 new ResourceLayoutDescription(
                     new ResourceLayoutElementDescription("GlyphTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
                     new ResourceLayoutElementDescription("GlyphTextureSampler", ResourceKind.Sampler, ShaderStages.Fragment)));

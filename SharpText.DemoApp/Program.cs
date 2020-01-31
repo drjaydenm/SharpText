@@ -42,6 +42,7 @@ namespace SharpText.DemoApp
 		public static void Main(string[] args)
 		{
 			window = CreateWindow();
+			window.Resized += () => graphicsDevice.ResizeMainWindow((uint)window.Width, (uint)window.Height);
 
 			Initialize();
 
@@ -64,9 +65,11 @@ namespace SharpText.DemoApp
 
 			infoFont = new Font(fonts[0], 13);
 			infoTextRenderer = new VeldridTextRenderer(graphicsDevice, commandList, infoFont);
+			window.Resized += infoTextRenderer.ResizeToSwapchain;
 
 			demoFont = new Font(fonts[currentFontIndex], fontSize);
 			demoTextRenderer = new VeldridTextRenderer(graphicsDevice, commandList, demoFont);
+			window.Resized += demoTextRenderer.ResizeToSwapchain;
 		}
 
 		private static void Update()
