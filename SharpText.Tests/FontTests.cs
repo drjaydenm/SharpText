@@ -65,7 +65,7 @@ namespace SharpText.Tests
 
             var measurementInfo = font.GetMeasurementInfoForString(text);
 
-            measurementInfo.LineHeight.ShouldBe(font.FontSizeInPixels, font.FontSizeInPixels * 0.1f);
+            measurementInfo.LineHeight.ShouldBe(font.FontSizeInPixels, font.FontSizeInPixels);
             measurementInfo.AdvanceWidths.Aggregate((a, b) => a + b).ShouldBe(40, 2);
         }
     }

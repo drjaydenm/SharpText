@@ -2,8 +2,8 @@
 
 namespace SharpText.DemoApp
 {
-	public static class WindowUtils
-	{
+    public static class WindowUtils
+    {
         internal static class ShcoreNative
         {
             [DllImport("Shcore.dll")]

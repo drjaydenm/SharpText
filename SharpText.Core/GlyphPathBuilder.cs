@@ -17,8 +17,6 @@ namespace SharpText.Core
         TrueTypeInterpreter _trueTypeInterpreter;
         protected GlyphPointF[] _outputGlyphPoints;
         protected ushort[] _outputContours;
-
-        protected Cff1Font _ownerCff;
         protected Cff1GlyphData _cffGlyphData;
 
         /// <summary>
@@ -56,7 +54,7 @@ namespace SharpText.Core
         /// <param name="sizeInPoints"></param>
         public void BuildFromGlyphIndex(ushort glyphIndex, float sizeInPoints)
         {
-            BuildFromGlyph(_typeface.GetGlyphByIndex(glyphIndex), sizeInPoints);
+            BuildFromGlyph(_typeface.GetGlyph(glyphIndex), sizeInPoints);
         }
         /// <summary>
         /// build glyph shape from glyph to be read
@@ -75,7 +73,6 @@ namespace SharpText.Core
             if (glyph.IsCffGlyph)
             {
                 _cffGlyphData = glyph.GetCff1GlyphData();
-                _ownerCff = glyph.GetOwnerCff();
             }
 
             //---------------
@@ -132,7 +129,7 @@ namespace SharpText.Core
             //read output from glyph points
             if (_cffGlyphData != null)
             {
-                _cffEvalEngine.Run(tx, _ownerCff, _cffGlyphData, _recentPixelScale);
+                _cffEvalEngine.Run(tx, _cffGlyphData, _recentPixelScale);
             }
             else
             {
@@ -145,7 +142,7 @@ namespace SharpText.Core
     {
         public static void Build(this GlyphPathBuilderBase builder, char c, float sizeInPoints)
         {
-            builder.BuildFromGlyphIndex((ushort)builder.Typeface.LookupIndex(c), sizeInPoints);
+            builder.BuildFromGlyphIndex((ushort)builder.Typeface.GetGlyphIndex(c), sizeInPoints);
         }
 
         public static void SetHintTechnique(this GlyphPathBuilderBase builder, HintTechnique hintTech)

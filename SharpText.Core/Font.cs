@@ -4,8 +4,8 @@ using System.IO;
 using ICSharpCode.SharpZipLib.Zip.Compression;
 using Typography.OpenFont;
 using Typography.OpenFont.Extensions;
+using Typography.OpenFont.WebFont;
 using Typography.TextLayout;
-using Typography.WebFont;
 
 namespace SharpText.Core
 {
@@ -45,7 +45,7 @@ namespace SharpText.Core
         private readonly Dictionary<char, Glyph> loadedGlyphs;
         private readonly GlyphPathBuilder pathBuilder;
         private readonly GlyphTranslatorToVertices pathTranslator;
-        
+
         private float TotalHeight => (typeface.Bounds.YMax - typeface.Bounds.YMin) * (FontSizeInPixels / typeface.UnitsPerEm);
 
         /// <summary>
@@ -192,8 +192,8 @@ namespace SharpText.Core
             if (loadedGlyphs.ContainsKey(character))
                 return loadedGlyphs[character];
 
-            var glyphIndex = typeface.CmapTable.LookupIndex(character);
-            var glyph = typeface.GetGlyphByIndex(glyphIndex);
+            var glyphIndex = typeface.GetGlyphIndex(character);
+            var glyph = typeface.GetGlyph(glyphIndex);
 
             loadedGlyphs.Add(character, glyph);
 

@@ -9,7 +9,7 @@ layout(set = 0, binding = 0) uniform TextVertexPropertiesBuffer
     vec4 rect;
 };
 ";
-        
+
         private static string SharedFragmentBufferDeclaration = @"
 layout(set = 0, binding = 1) uniform TextFragmentPropertiesBuffer
 {
