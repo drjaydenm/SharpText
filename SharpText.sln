@@ -4,10 +4,6 @@ VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpText.Core", "SharpText.Core\SharpText.Core.csproj", "{B24F9E8E-CD6B-4CEC-9906-6B704015CB01}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Typography.OpenFont", "Typography\Typography.OpenFont\Typography.OpenFont.shproj", "{235A071B-8D06-40AE-A5C5-B1CE59715EE9}"
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Typography.GlyphLayout", "Typography\Typography.GlyphLayout\Typography.GlyphLayout.shproj", "{D8861CF8-C506-472B-8A57-632BD6CA6496}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpText.DemoApp", "SharpText.DemoApp\SharpText.DemoApp.csproj", "{126E04BB-BF92-4A30-9CDA-AAC532C02EF1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpText.Veldrid", "SharpText.Veldrid\SharpText.Veldrid.csproj", "{7889E106-83FC-4A61-BD8A-DC1567B3F9DB}"
@@ -26,12 +22,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpText.Tests", "SharpText.Tests\SharpText.Tests.csproj", "{3E1DABEB-BC79-4C61-ACA5-CBA6E202387B}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		Typography\Typography.OpenFont\Typography.OpenFont.projitems*{235a071b-8d06-40ae-a5c5-b1ce59715ee9}*SharedItemsImports = 13
-		Typography\Typography.GlyphLayout\Typography.GlyphLayout.projitems*{b24f9e8e-cd6b-4cec-9906-6b704015cb01}*SharedItemsImports = 5
-		Typography\Typography.OpenFont\Typography.OpenFont.projitems*{b24f9e8e-cd6b-4cec-9906-6b704015cb01}*SharedItemsImports = 5
-		Typography\Typography.GlyphLayout\Typography.GlyphLayout.projitems*{d8861cf8-c506-472b-8a57-632bd6ca6496}*SharedItemsImports = 13
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU

@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using ICSharpCode.SharpZipLib.Zip.Compression;
-using Typography.OpenFont;
-using Typography.OpenFont.Extensions;
-using Typography.OpenFont.WebFont;
-using Typography.TextLayout;
+using System.Linq;
+using SixLabors.Fonts;
+using SixLaborsFont = SixLabors.Fonts.Font;
 
 namespace SharpText.Core
 {
@@ -36,17 +33,19 @@ namespace SharpText.Core
     {
         public float FontSizeInPoints { get; private set; }
         public float FontSizeInPixels => FontSizeInPoints * POINTS_TO_PIXELS;
-        public string Name => typeface.Name;
+        public string Name => font.Name;
 
         private const float POINTS_TO_PIXELS = 4f / 3f;
         private const float PIXELS_TO_POINTS = 3f / 4f;
 
-        private readonly Typeface typeface;
+        private readonly FontDescription typeface;
+        private readonly SixLaborsFont font;
+        private readonly RendererOptions options;
         private readonly Dictionary<char, Glyph> loadedGlyphs;
-        private readonly GlyphPathBuilder pathBuilder;
         private readonly GlyphTranslatorToVertices pathTranslator;
+        private readonly TextRenderer renderer;
 
-        private float TotalHeight => (typeface.Bounds.YMax - typeface.Bounds.YMin) * (FontSizeInPixels / typeface.UnitsPerEm);
+        private float TotalHeight => 100;// (typeface.Bounds.YMax - typeface.Bounds.YMin) * (FontSizeInPixels / typeface.UnitsPerEm);
 
         /// <summary>
         /// Create a new font instance
@@ -55,19 +54,19 @@ namespace SharpText.Core
         /// <param name="fontSizeInPixels">The desired font size in pixels</param>
         public Font(string filePath, float fontSizeInPixels)
         {
-            SetupWoffDecompressorIfRequired();
-
             FontSizeInPoints = fontSizeInPixels * PIXELS_TO_POINTS;
             loadedGlyphs = new Dictionary<char, Glyph>();
 
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
-                var reader = new OpenFontReader();
-                typeface = reader.Read(fs);
+                var collection = new FontCollection();
+                collection.Install(fs, out typeface);
+                font = collection.Families.First().CreateFont(fontSizeInPixels);
             }
 
-            pathBuilder = new GlyphPathBuilder(typeface);
+            options = new RendererOptions(font);
             pathTranslator = new GlyphTranslatorToVertices();
+            renderer = new TextRenderer(pathTranslator);
         }
 
         /// <summary>
@@ -77,16 +76,16 @@ namespace SharpText.Core
         /// <param name="fontSizeInPixels">The desired font size in pixels</param>
         public Font(Stream fontStream, float fontSizeInPixels)
         {
-            SetupWoffDecompressorIfRequired();
-
             FontSizeInPoints = fontSizeInPixels * PIXELS_TO_POINTS;
             loadedGlyphs = new Dictionary<char, Glyph>();
 
-            var reader = new OpenFontReader();
-            typeface = reader.Read(fontStream);
+            var collection = new FontCollection();
+            collection.Install(fontStream, out typeface);
+            font = collection.Families.First().CreateFont(fontSizeInPixels);
 
-            pathBuilder = new GlyphPathBuilder(typeface);
+            options = new RendererOptions(font);
             pathTranslator = new GlyphTranslatorToVertices();
+            renderer = new TextRenderer(pathTranslator);
         }
 
         /// <summary>
@@ -96,11 +95,8 @@ namespace SharpText.Core
         /// <returns>Vertices in pixel units</returns>
         public VertexPosition3Coord2[] GetVerticesForCharacter(char character)
         {
-            var glyph = GetGlyphByCharacter(character);
+            pathTranslator.Render(new char[] { character }, options);
 
-            pathBuilder.BuildFromGlyph(glyph, FontSizeInPoints);
-
-            pathBuilder.ReadShapes(pathTranslator);
             var vertices = pathTranslator.ResultingVertices;
 
             return vertices;
@@ -127,26 +123,14 @@ namespace SharpText.Core
                 stringData.Vertices[i] = vertices;
             }
 
-            // Move up/down the glyphs to align them to Y=0
-            if (typeface.Bounds.YMin != 0)
+            var measure = TextMeasurer.Measure(text, options);
+            stringData.Bounds = new BoundingRectangle
             {
-                var scale = FontSizeInPixels / TotalHeight;
-                var offset = typeface.Bounds.YMin * (FontSizeInPixels / typeface.UnitsPerEm);
-                for (var i = 0; i < text.Length; i++)
-                {
-                    for (var j = 0; j < stringData.Vertices[i].Length; j++)
-                    {
-                        stringData.Vertices[i][j].Position.X *= scale;
-                        stringData.Vertices[i][j].Position.Y *= scale;
-                        stringData.Vertices[i][j].Position.Y -= offset + FontSizeInPixels;
-                    }
-                }
-
-                stringData.Bounds.StartY -= offset;
-                stringData.Bounds.EndY -= offset;
-                stringData.Bounds.StartY *= scale;
-                stringData.Bounds.EndY *= scale;
-            }
+                StartX = measure.Left,
+                EndX = measure.Right,
+                StartY = measure.Top,
+                EndY = measure.Bottom
+            };
 
             return stringData;
         }
@@ -158,27 +142,24 @@ namespace SharpText.Core
         /// <returns>Advance distances for each glyph in pixel units</returns>
         public MeasurementInfo GetMeasurementInfoForString(string text)
         {
-            var layout = new GlyphLayout();
-            layout.Typeface = typeface;
+            var measure = TextMeasurer.Measure(text, options);
 
-            var measure = layout.LayoutAndMeasureString(text.ToCharArray(), 0, text.Length, FontSizeInPoints);
-            var lineHeight = typeface.CalculateLineSpacing(LineSpacingChoice.TypoMetric) * (FontSizeInPixels / typeface.UnitsPerEm);
-
-            var glyphPositions = layout.ResultUnscaledGlyphPositions;
-            var advanceWidths = new float[glyphPositions.Count];
+            //var glyphPositions = layout.ResultUnscaledGlyphPositions;
+            var advanceWidths = new float[text.Length];
             var scale = FontSizeInPixels / TotalHeight;
-            for (var i = 0; i < glyphPositions.Count; i++)
+            for (var i = 0; i < advanceWidths.Length; i++)
             {
-                glyphPositions.GetGlyph(i, out var advanceW);
-                advanceWidths[i] = advanceW * (FontSizeInPixels / typeface.UnitsPerEm) * scale;
+                advanceWidths[i] = i * scale;
+                //glyphPositions.GetGlyph(i, out var advanceW);
+                //advanceWidths[i] = advanceW * (FontSizeInPixels / typeface.UnitsPerEm) * scale;
             }
 
             return new MeasurementInfo
             {
-                Ascender = measure.AscendingInPx,
-                Descender = measure.DescendingInPx,
+                Ascender = font.Ascender,
+                Descender = font.Descender,
                 AdvanceWidths = advanceWidths,
-                LineHeight = lineHeight
+                LineHeight = font.LineHeight
             };
         }
 
@@ -192,39 +173,11 @@ namespace SharpText.Core
             if (loadedGlyphs.ContainsKey(character))
                 return loadedGlyphs[character];
 
-            var glyphIndex = typeface.GetGlyphIndex(character);
-            var glyph = typeface.GetGlyph(glyphIndex);
+            var glyph = font.GetGlyph(character);
 
             loadedGlyphs.Add(character, glyph);
 
             return glyph;
-        }
-
-        /// <summary>
-        /// The initial WOFF decompressor is null and throws an exception
-        /// So we use SharpZipLib to inflate the file
-        /// </summary>
-        private static void SetupWoffDecompressorIfRequired()
-        {
-            if (WoffDefaultZlibDecompressFunc.DecompressHandler != null)
-                return;
-
-            WoffDefaultZlibDecompressFunc.DecompressHandler = (byte[] compressedBytes, byte[] decompressedResult) =>
-            {
-                try
-                {
-                    var inflater = new Inflater();
-                    inflater.SetInput(compressedBytes);
-                    inflater.Inflate(decompressedResult);
-
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine(ex.ToString());
-                    return false;
-                }
-            };
         }
     }
 }

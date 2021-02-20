@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
-using Typography.OpenFont;
+using SixLabors.Fonts;
 
 namespace SharpText.Core
 {
@@ -11,7 +11,7 @@ namespace SharpText.Core
         QuadraticCurve
     }
 
-    public class GlyphTranslatorToVertices : IGlyphTranslator
+    public class GlyphTranslatorToVertices : IGlyphRenderer
     {
         public VertexPosition3Coord2[] ResultingVertices => vertices.ToArray();
 
@@ -22,44 +22,55 @@ namespace SharpText.Core
         private short contourCount;
         private List<VertexPosition3Coord2> vertices;
 
-        public void BeginRead(int contourCount)
+        public void BeginText(FontRectangle bounds)
+        {
+        }
+
+        public void EndText()
+        {
+        }
+
+        public bool BeginGlyph(FontRectangle bounds, GlyphRendererParameters paramaters)
         {
             Reset();
+
+            return true;
         }
 
-        public void EndRead()
+        public void EndGlyph()
         {
         }
 
-        public void MoveTo(float x, float y)
+        public void BeginFigure()
         {
-            lastX = lastMoveX = x;
-            lastY = lastMoveY = y;
-            contourCount = 0;
         }
 
-        public void CloseContour()
+        public void EndFigure()
         {
-            lastX = lastMoveX;
-            lastY = lastMoveY;
+        }
+
+        public void MoveTo(Vector2 point)
+        {
+            lastX = lastMoveX = point.X;
+            lastY = lastMoveY = point.Y;
             contourCount = 0;
         }
 
         // Quadratic bezier curve
-        public void Curve3(float x1, float y1, float x2, float y2)
+        public void QuadraticBezierTo(Vector2 secondControlPoint, Vector2 point)
         {
             if (++contourCount >= 2)
             {
-                AppendTriangle(lastMoveX, lastMoveY, lastX, lastY, x2, y2, TriangleKind.Solid);
+                AppendTriangle(lastMoveX, lastMoveY, lastX, lastY, secondControlPoint.X, secondControlPoint.Y, TriangleKind.Solid);
             }
 
-            AppendTriangle(lastX, lastY, x1, y1, x2, y2, TriangleKind.QuadraticCurve);
-            lastX = x2;
-            lastY = y2;
+            AppendTriangle(lastX, lastY, point.X, point.Y, secondControlPoint.X, secondControlPoint.Y, TriangleKind.QuadraticCurve);
+            lastX = secondControlPoint.X;
+            lastY = secondControlPoint.Y;
         }
 
         // Cubic bezier curve
-        public void Curve4(float x1, float y1, float x2, float y2, float x3, float y3)
+        public void CubicBezierTo(Vector2 secondControlPoint, Vector2 thirdControlPoint, Vector2 point)
         {
             var curve = new CubicCurve(
                 new Complex(lastX, lastY),
@@ -81,15 +92,15 @@ namespace SharpText.Core
             }
         }
 
-        public void LineTo(float x, float y)
+        public void LineTo(Vector2 point)
         {
             if (++contourCount >= 2)
             {
-                AppendTriangle(lastMoveX, lastMoveY, lastX, lastY, x, y, TriangleKind.Solid);
+                AppendTriangle(lastMoveX, lastMoveY, lastX, lastY, point.X, point.Y, TriangleKind.Solid);
             }
 
-            lastX = x;
-            lastY = y;
+            lastX = point.X;
+            lastY = point.Y;
         }
 
         public void Reset()
