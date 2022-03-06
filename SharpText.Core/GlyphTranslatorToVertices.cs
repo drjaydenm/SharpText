@@ -59,9 +59,26 @@ namespace SharpText.Core
         }
 
         // Cubic bezier curve
-        public void Curve4(float x1, float y1, float x2, float y2, float x3, float y3)
+        public void Curve4 (float x1, float y1, float x2, float y2, float x3, float y3)
         {
-            throw new NotImplementedException();
+            var curve = new CubicToQuadratic.CubicCurve(
+                new Complex(lastX, lastY),
+                new Complex(x1, y1),
+                new Complex(x2, y2),
+                new Complex(x3, y3)
+            );
+            
+            if (!CubicToQuadratic.CurveToQuadratic(curve, 1, out var spline))
+            {
+                throw new Exception("Couldn't create spline");
+            }
+
+            for (int i = 0; i + 2 < spline.Count; i += 2)
+            {
+                var p1 = spline[i + 1];
+                var p2 = spline[i + 2];
+                Curve3((float) p1.Real, (float) p1.Imaginary, (float) p2.Real, (float) p2.Imaginary);
+            }
         }
 
         public void LineTo(float x, float y)
