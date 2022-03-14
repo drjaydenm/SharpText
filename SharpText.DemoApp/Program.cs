@@ -29,7 +29,11 @@ namespace SharpText.DemoApp
             "Fonts/AmaticSC-Regular.ttf",
             "Fonts/LeArchitect.ttf",
             "Fonts/Sacramento-Regular.ttf",
-            "Fonts/neon2.ttf"
+            "Fonts/neon2.ttf",
+            "Fonts/GapSansBold.ttf",
+            "Fonts/OstrichSans-Heavy.otf",
+            "Fonts/terminal-grotesque_open.otf",
+            "Fonts/YoungSerif-Regular.otf"
         };
         private static int currentColorIndex = 0;
         private static Color[] colors =
