@@ -1,11 +1,16 @@
 <Project>
   <PropertyGroup>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <Authors>Jayden Meyer</Authors>
-    
-    <PackageLicenseUrl>https://raw.githubusercontent.com/drjaydenm/SharpText/master/LICENSE</PackageLicenseUrl>
+
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Copyright>Copyright (c) Jayden Meyer. All rights reserved.</Copyright>
     <RepositoryUrl>https://github.com/drjaydenm/SharpText</RepositoryUrl>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="LICENSE" Pack="true" PackagePath="$(PackageLicenseFile)" />
+  </ItemGroup>
 </Project>
